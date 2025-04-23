@@ -1,0 +1,167 @@
+body {
+    background-color: var(--base-clr);
+    color: var(--text-clr);
+    min-height: 100vh;
+    display: grid;
+    background-image: url("../images/train-home.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.container-box {
+    max-width: 40% !important;
+    width: 90%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 1);
+    margin: auto auto;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    flex-direction: column;
+    height: 90%;
+
+}
+.title {
+    font-size: 200%;
+    font-weight: bolder;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 7% !important;
+
+}
+.left-panel {
+    padding: 5%;
+    width: 100%;
+    height: 100%;
+  }
+  .form-control {
+    border-radius: 20px !important;
+    padding: 10px 20px !important;
+    margin-bottom: 4%;
+  }
+  .social-btn {
+    border: 1px solid #ccc;
+    border-radius: 30px;
+    padding: 8px 16px;
+    background: #fff;
+    width: 100%;
+  }
+  .small-text a {
+    text-decoration: underline;
+    font-weight: 500;
+    color: black;
+
+  }
+  .container-header {
+    background: white !important;
+  }
+  .head-logo {
+    width: 82% !important;
+    height: auto !important;
+  }
+  .head-logo1{
+    height: 78%;
+    width: 160%;
+  }
+  .logo-txt {
+    color: #000000 !important;
+    font-size: 30px !important;
+    text-align: center !important;
+    margin-top: 11% !important;
+    padding-left: 0%;
+    font-family: 'Courier New', Courier, monospace !important;
+  }
+  .search-box {
+    border-radius: 25px !important;
+    background: white !important;
+    padding: 1.5% !important;
+  }
+  .text-box {
+    border: 0px solid #000000 !important;
+    border-radius: 25px !important;
+    margin-top: 3% !important;
+    padding: 0% !important;
+    font-size: 15px !important;
+  }
+  .from-to-box {
+    border: 1px solid aqua !important;
+    padding: 10px !important;
+    border-radius: 5px !important;
+    margin-left: 3% !important;
+  }
+  .logo-box {
+    font-size: 20px; 
+    margin-top: 34%; 
+    padding: 0%;
+  }
+  .submit-btn {
+    padding: 10px 20px !important;
+    font-weight: 500;
+    width: 100% !important;
+    transition-duration: 0.3s;
+    background-color: rgb(0, 0, 0);
+    margin-top: 2px !important;
+    border: none;
+    border-radius: 50px !important;
+    color: white;
+  }
+  .submit-btn:hover {
+    background-color: rgb(255, 255, 255) !important;
+    border: 1px black solid;
+    color: #000;
+    border-radius: 50px !important;
+    padding: 10px 20px;
+    font-weight: 500;
+    width: 100%;
+    transition-duration: 0.3s;
+  }
+  .date-box {
+    font-family: revert;
+    border: 0px black !important;
+    width: 213px !important;
+    padding: 0% !important;
+    padding-top: 5px !important ;
+  }
+  .hihi1 {
+    width: 100px !important;
+    padding-top: 2%;
+    width: 8% !important;
+    font-size: 18px !important;
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+    width: 7% !important;
+  }
+  .hihi2 {
+    width: 100px !important;
+    padding-top: 2%;
+    width: 15% !important;
+    font-size: 18px !important;
+  }
+  .header-link {
+    text-decoration: none !important;
+    color: #000000 !important;
+    font-weight: bold !important;
+    padding-left: 6% !important;
+    
+  }
+  input[type="list"]:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  .custom-select-scroll {
+    max-height: 200px; /* Scroll when height exceeds */
+    overflow-y: auto;
+  }
+  
+  select.form-select {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    font-size: 1rem;
+  }

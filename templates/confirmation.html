@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Confirm Booking</title>
+  <link rel="stylesheet" href="../static/css/confirmation.css">
+<body>
+    <div class ="container" style="max-width: 100%; padding: 0%; margin: 0%;">
+        <div class="row">
+            <div class="col-md-2">
+                <div class="sidebar">
+                <div style="    height: 15%;">
+                <img src="../static/images/ChatGPT Image Apr 23, 2025, 02_24_07 PM.png" alt="Logo 1" style="margin-top: -7%; margin-left: 21%; height: 100%; filter: invert(1);">
+                </div>        
+                <div class="login-container" style="margin-left: 21%; margin-top: 5%;">
+                    <span class="logo-text">
+                        <a href="{{ url_for('login_user') }}" class="login-btn" style="text-decoration: none;">Login/Signup</a>
+            
+                        <p id="timestamp"></p>
+                    </span>
+                </div>
+                <div class="logo-container">
+                    <img src="../static/icons/home.svg" alt="Logo 1" class="logo-img">
+                    <span class="logo-text">
+                        <a href="{{ url_for('index') }}">Home</a></span>
+                </div>
+                <div class="logo-container">
+                    <img src="../static/icons/transit_ticket.svg" alt="Logo 2" class="logo-img">
+                    <span class="logo-text">
+                        <a href="{{ url_for('index') }}">PNR Enquiry</a></span>        
+                </div>
+                <div class="logo-container">
+                    <img src="../static/icons/cancel-ticket.png" alt="Logo 3" class="logo-img">
+                    <span class="logo-text">
+                        <a href="{{ url_for('index') }}">Ticket Cancelation</a></span>        
+                </div>
+                </div>
+            </div>
+            <div class="col-md-10">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h2>Confirm Your Booking</h2>
+
+                            <form method="POST" action="/confirm">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th><th>Age</th><th>Gender</th><th>Berth</th><th>Nationality</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for p in passengers %}
+                                        <tr>
+                                            <td>
+                                            {{ p.name }}
+                                                <input type="hidden" name="name-{{ loop.index0 }}" value="{{ p.name }}">
+                                            </td>
+                                            <td>
+                                            {{ p.age }}
+                                            <input type="hidden" name="age-{{ loop.index0 }}" value="{{ p.age }}">
+                                            </td>
+                                            <td>
+                                            {{ p.gender }}
+                                                <input type="hidden" name="gender-{{ loop.index0 }}" value="{{ p.gender }}">
+                                            </td>
+                                            <td>
+                                            {{ p.berth }}
+                                                <input type="hidden" name="berth-{{ loop.index0 }}" value="{{ p.berth }}">
+                                            </td>
+                                            <td>
+                                            {{ p.nationality }}
+                                                <input type="hidden" name="nationality-{{ loop.index0 }}" value="{{ p.nationality }}">
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                                <button type="submit" class="button">Confirm Booking</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Expandable Sidebar</title>
+  <link rel="stylesheet" href="../static/css/index.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script>
+    function rotateImage(img) {
+      img.classList.toggle("rotated");
+    }
+    function swapPlaces() {
+    let fromInput = document.getElementById("from");
+    let toInput = document.getElementById("to");
+
+    let temp = fromInput.value;
+    fromInput.value = toInput.value;
+    toInput.value = temp;
+  }
+  function updateTimestamp() {
+    const now = new Date();
+    const formatted = now.toLocaleString(); // You can use toLocaleDateString() or toLocaleTimeString() too
+    document.getElementById("timestamp").innerText = `Current Time: ${formatted}`;
+  }
+
+  updateTimestamp();
+
+  setInterval(updateTimestamp, 1000);
+  </script>
+</head>
+<body>
+    <div class="sidebar">
+      <div style="    height: 15%;">
+        <img src="../static/images/ChatGPT Image Apr 23, 2025, 02_24_07 PM.png" alt="Logo 1" style="margin-top: -7%; margin-left: 21%; height: 100%;">
+      </div>        
+      <div class="login-container" style="margin-left: 21%; margin-top: 5%;">
+            <span class="logo-text">
+              <a href="{{ url_for('login_user') }}" class="login-btn" style="text-decoration: none;">Login/Signup</a>
+
+              <p id="timestamp"></p>
+            </span>
+        </div>
+        <div class="logo-container">
+            <img src="../static/icons/home.svg" alt="Logo 1" class="logo-img">
+            <span class="logo-text">
+              <a href="{{ url_for('index') }}">Home</a></span>
+        </div>
+        <div class="logo-container">
+            <img src="../static/icons/transit_ticket.svg" alt="Logo 2" class="logo-img">
+            <span class="logo-text">
+              <a href="{{ url_for('index') }}">PNR Enquiry</a></span>        
+        </div>
+        <div class="logo-container">
+            <img src="../static/icons/cancel-ticket.png" alt="Logo 3" class="logo-img">
+            <span class="logo-text">
+              <a href="{{ url_for('index') }}">Ticket Cancelation</a></span>        
+        </div>
+    </div>
+    <div class="container-box">
+      <div class="left-panel">
+        <h4 class="mb-3" style="margin-left: 19%; font-size: 35px; margin-bottom: 7% !important;"><b>BOOK TICKET</b></h4>
+        <form action="{{ url_for('search') }}" method="GET">
+          <div class="mb-2">
+            <input type="list" list="station-list" class="form-control" placeholder="From" id="from" name="from" required style="background-image: url('../static/icons/location.svg'); background-repeat: no-repeat; background-position: 5px center; background-size: 20px;">
+              <datalist id="station-list">
+                {% for station in stations %}
+                  <option value="{{ station }}">
+                {% endfor %}
+              </datalist>          </div>
+          <div class="mb-2 swap-logo">
+            <img src="../static/icons/swap.svg" alt="Logo 1" class="swap-img" onclick="rotateImage(this) ; swapPlaces()">
+          </div>
+          <div class="mb-2" style="margin-bottom: 5% !important;">
+            <input type="list" list="station-list" class="form-control" placeholder="To" id="to" name="to" required style="background-image: url('../static/icons/location.svg'); background-repeat: no-repeat; background-position: 5px center; background-size: 20px;">
+              <datalist id="station-list">
+                {% for station in stations %}
+                  <option value="{{ station }}">
+                {% endfor %}
+              </datalist>          
+          </div>
+          <div class="mb-2" style="margin-bottom: 5% !important;">
+            <input type="date" class="form-control" placeholder='Select Date' required-min="{{ today }}" id="date" name="date" required style="background-image: url('../static/icons/calendar.svg'); background-repeat: no-repeat; background-position: 5px center; background-size: 20px;">
+          </div>
+          <div class="mb-2" style="margin-bottom: 5% !important;">
+            <div class="custom-select-wrapper" >
+              <select name ="class_type">
+                <option value="" disabled selected>Select Classes</option>
+                {% for class in class_labels %}
+                  <option value="option1">{{ class }}</option>
+                  {% endfor %}
+              </select>
+            </div> 
+            <div class="mb-2"">
+              <button type="submit" class="submit-btn" >Search</button>
+            </div>         
+          </div>    
+        </form>
+        </div>
+      </div>
+    </div>
+</body>
+</html>

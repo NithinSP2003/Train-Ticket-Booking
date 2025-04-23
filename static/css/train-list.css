@@ -1,0 +1,133 @@
+body {
+    background-color: #000306;
+    color: #f7f9fa;
+}
+.card {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    width: 100%;
+    margin: 2% auto;
+}
+.card-title {
+    color: #000000;
+}
+.text-primary {
+    color: #0d6efd;
+}
+.text-success {
+    color: #198754;
+}
+.time-line {
+    border-top: 2px solid #adb5bd;
+    text-align: center;
+    position: relative;
+    margin-top: 2%;
+    width: 100%;
+}
+.time-line span {
+    background-color: #ffffff;
+    position: absolute;
+    left: 50%;
+    top: -12px;
+    transform: translateX(-50%);
+    padding: 0 2%;
+    font-weight: bold;
+    color: #212529;
+}
+.btn-warning {
+    background-color: #ffc107;
+    color: #000;
+    border: none;
+    width: 35%;
+}
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+.class-btn {
+    margin: 2px;
+}
+.alert-warning {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #ffeeba;
+    width: 100%;
+    margin: 2% auto;
+}
+.text-muted {
+    color: #6c757d;
+}
+.avl-li {
+    width: 21%;
+}
+.selectable-card {
+transition: 0.2s ease;
+}
+.selectable-card:hover {
+background-color: #f8f9fa;
+}
+.border-success {
+border-color: #198754 !important;
+}
+.sidebar {
+    width: 15%;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
+    height: 100vh;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 10px;
+}
+.logo-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15%;
+    cursor: pointer;
+    padding: 3%;
+    width: 100%;
+}
+.logo-container:hover {
+    background-color: #4c4c4c;
+    border-radius: 4px;
+    color: white ;
+    transition: background-color 0.3s ease;
+    
+}
+.login-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15%;
+    cursor: pointer;
+}
+.logo-img {
+    width: 40px;
+    height: 40px;
+    color: #efefef !important;
+  }
+  .logo-text {
+    color: #000000;
+    margin-left: 15px;
+    white-space: nowrap;
+    transition: opacity 0.3s ease;
+    font-weight: bold;
+    a{
+        text-decoration: none;
+        color: #000000;
+    }
+}
+.login-btn {
+    background-color: transparent; 
+    margin-left: -24%;
+    margin-top: 5%;
+    border: 2px black solid; 
+    border-radius: 5px;
+    padding: 10px 20px; 
+    font-size: 16px; 
+    cursor: pointer;
+    color: rgb(0, 0, 0);
+  }
+  .login-btn:hover {
+    background-color: #000000; 
+    color: #ffffff;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
