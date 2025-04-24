@@ -46,7 +46,7 @@ def get_availability():
             """
             cursor.execute(query, (train_number, class_code))
             rows = cursor.fetchall()
- 
+    
             if rows:
                 for row in rows:
                     travel_date, available, rac, wl = row
@@ -86,6 +86,54 @@ def calculate_duration(departure_time, arrival_time):
     minutes, _ = divmod(remainder, 60)
     return f"{hours}h {minutes}m"
 
+def calculate_fare(train_no, from_station, to_station, class_code):
+    with conn.cursor() as cursor:
+        # Get distances
+        dist_query = """
+            SELECT station_name, distance_from_start
+            FROM station_distances
+            WHERE train_number = %s
+        """
+        cursor.execute(dist_query, (train_no,))
+        distances = {row[0]: row[1] for row in cursor.fetchall()}
+
+        if from_station not in distances or to_station not in distances:
+            print("Invalid stations:", from_station, to_station)
+            return None, None  # Invalid stations
+
+        distance = abs(distances[to_station] - distances[from_station])
+
+        # Get fare rate
+        fare_query = "SELECT rate_per_km FROM fare_rates WHERE class_code = %s"
+        cursor.execute(fare_query, (class_code,))
+        rate_row = cursor.fetchone()
+
+        if not rate_row:
+            print("Invalid class code:", class_code)
+            return None, None
+
+        rate = rate_row[0]
+        fare = distance * rate
+        print("Calculated fare:", fare, "for distance:", distance)
+        return round(fare, 2), distance
+
+@app.route('/cal_fare',methods=['POST'])
+def get_fare():
+    data = request.get_json()
+    train_number = data['trainNumber']
+    from_station = data['from']
+    to_station = data['to']
+    class_code = data['classCode']
+
+    fare,distance = calculate_fare(train_number, from_station, to_station, class_code)
+
+    if fare is None:
+            return jsonify({'error': 'Invalid stations or class code'}), 400
+
+    
+    return jsonify({'fare': fare})
+
+
 def generate_pnr():
     date_code = datetime.now().strftime("%d%m")
     random_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -122,7 +170,7 @@ def index():
     today = date.today().isoformat()
     return render_template('index.html', stations=stations, today=today, class_labels=CLASS_LABELS)
 
-@app.route('/search')
+@app.route('/ticket-list')
 def search():
     from_station = request.args.get('from', '').strip()
     to_station = request.args.get('to', '').strip()
