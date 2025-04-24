@@ -63,6 +63,30 @@ body {
     margin-bottom: 15%;
     cursor: pointer;
 }
+.user-container {
+    background-color: white;
+    filter: invert(1);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15%;
+    cursor: pointer; 
+    width: 106%;
+    margin-left: -3%;
+    padding: 2%;
+}
+
+.user-text{
+    color: #000000;
+    margin-left: 4px;
+    white-space: nowrap;
+    transition: opacity 0.3s ease;
+    font-weight: bold;
+    a{
+        text-decoration: none;
+        color: #000000;
+    }
+}
 
 .logo-img {
   width: 40px;
@@ -191,10 +215,21 @@ body {
 
 }
 
-.custom-select-wrapper {
-    position: relative;
-    width: 100%;
+.custom-dropdown {
+        background-color: white;
+        color: black;
+        border: 2px solid black;
+        margin: 0;
 }
+      
+.custom-dropdown .dropdown-item {
+    color: black;
+}
+      
+.custom-dropdown .dropdown-item:hover {
+        background-color: #f0f0f0;
+}
+      
 
 select {
     appearance: none;
