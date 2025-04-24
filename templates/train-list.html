@@ -37,6 +37,8 @@
                             <a href="{{ url_for('index') }}">Ticket Cancelation</a></span>        
                     </div>
                 </div>
+                <div id="login-status" data-logged-in="{{ session.get('user_logged_in', False) }}"></div>
+
             </div>
             <div class="col-md-10">
                 <div class="container" style="width: 90%;">
@@ -200,7 +202,16 @@
     window.location.href = url;
 }
 
-
+    function validateSearchForm() {
+        // ✅ Get login status safely from HTML
+        const isLoggedIn = document.getElementById("login-status").dataset.loggedIn === "True";
+        if (!isLoggedIn) {
+            alert("Please login to search for buses.");
+            window.location.href = "{{ url_for('login_user') }}";
+            return false;
+        }
+        return true;
+    }
 
 </script>
 

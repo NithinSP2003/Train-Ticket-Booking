@@ -165,6 +165,12 @@ def search():
                            class_type=class_type,
                            class_labels=CLASS_LABELS)
 
+@app.route('/logout')
+def logout():
+    session.pop('user_logged_in', None)
+    session.clear()
+    return redirect(url_for('index'))
+
 @app.route('/summary', methods=['POST'])
 def summary():
     pnr = generate_pnr()
@@ -363,7 +369,7 @@ def login_user():
         if result:
             session['user_logged_in'] = True
             session['user_name'] = result[1] 
-            return redirect(url_for('home'))
+            return redirect(url_for('index'))
         else:
             return "Invalid credentials"
     elif request.method == 'GET':
