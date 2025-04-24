@@ -1,6 +1,8 @@
 from flask import Flask, request, render_template, redirect, url_for,flash,session, jsonify
 import pymysql
 from datetime import datetime, timedelta, date
+import random, string
+
 
 conn = pymysql.connect(
     host="127.0.0.1",       
@@ -30,15 +32,13 @@ CLASS_LABELS = {
 def get_availability():
     train_number = request.args.get('train_number')
     class_code = request.args.get('class_code')
-
-    print(f"Received train_number: {train_number}, class_code: {class_code}")  # Debugging line
-
+ 
     results = []
-
+ 
     try:
         with conn.cursor() as cursor:
             query = """
-                SELECT travel_date AS date, timing, wl_status AS wl
+                SELECT travel_date, available_count, rac_count, wl_count
                 FROM availability
                 WHERE train_number = %s AND class_code = %s
                 ORDER BY travel_date
@@ -46,24 +46,28 @@ def get_availability():
             """
             cursor.execute(query, (train_number, class_code))
             rows = cursor.fetchall()
-
+ 
             if rows:
-                for row1 in rows:
-                    row = list(row1)
-                    if isinstance(row[1], timedelta):
-                        row[1] = str(row[1])
-
+                for row in rows:
+                    travel_date, available, rac, wl = row
+ 
+                    if available > 0:
+                        availability_status = f"Available: {available}"
+                    elif rac > 0:
+                        availability_status = f"RAC: {rac}"
+                    else:
+                        availability_status = f"WL: {wl}"
+ 
                     results.append({
-                        "date": row[0].strftime('%a, %d %b'),  # Ensure date is string formatted
-                        "timing": row[1],  # Now it's a string, so it's JSON serializable
-                        "wl": row[2]
+                        "date": travel_date.strftime('%a, %d %b'),
+                        "availability": availability_status
                     })
             else:
-                print("No data found for this query.")  # Debugging line
-
+                print("No data found for this query.")
+ 
     except Exception as e:
-        print(f"Error during database query: {e}")  # Debugging line
-
+        print(f"Error during database query: {e}")
+ 
     return jsonify(results)
 
 def calculate_duration(departure_time, arrival_time):
@@ -81,6 +85,33 @@ def calculate_duration(departure_time, arrival_time):
     hours, remainder = divmod(duration.seconds, 3600)
     minutes, _ = divmod(remainder, 60)
     return f"{hours}h {minutes}m"
+
+def generate_pnr():
+    date_code = datetime.now().strftime("%d%m")
+    random_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    return f"{date_code}{random_code}"
+
+def preference(pref, L, pref_type):
+    if pref_type == 'seating':  # GN or 2S
+        options = ['Window', 'Middle', 'Aisle']
+    else:  # Sleeper or AC
+        options = ['Lower', 'Middle', 'Upper', 'Side Lower', 'Side Upper']
+ 
+    if pref in options:
+        lst = [options.index(pref)] + [i for i in range(len(options)) if i != options.index(pref)]
+    else:
+        lst = list(range(len(options)))
+ 
+    for i in lst:
+        if L[i] > 0:
+            L[i] -= 1
+            return options[i]
+ 
+    if L[-1] > 0:
+        L[-1] -= 1
+        return 'rac'
+ 
+    return 'waiting'
 
 @app.route('/')
 def index():
@@ -104,15 +135,14 @@ def search():
         trains = cursor.fetchall()
         for train1 in trains:
             train= {
-                'id': train1[0],
-                'number': train1[1],
-                'name': train1[2],
-                'route': train1[3],
-                'type': train1[4],
-                'classes': train1[5],
-                'departure_time': train1[6],
-                'arrival_time': train1[7],
-                'days': train1[8],
+                'number': train1[0],
+                'name': train1[1],
+                'route': train1[2],
+                'type': train1[3],
+                'classes': train1[4],
+                'departure_time': train1[5],
+                'arrival_time': train1[6],
+                'days': train1[7],
             }
             route = [station.strip().lower() for station in train['route'].split(',')]
             if from_station.lower() in route and to_station.lower() in route:
@@ -135,7 +165,108 @@ def search():
                            class_type=class_type,
                            class_labels=CLASS_LABELS)
 
+@app.route('/summary', methods=['POST'])
+def summary():
+    pnr = generate_pnr()
+    passengers = session.get('passengers', [])
+    train_no = 12633  #session.get('train_no')
+    class_code = '2S' #session.get('class_code')
+ 
+    updated_passengers = []
+ 
+    # Determine if class uses seating or sleeper-type preference
+    if class_code in ['2S', 'GN']:
+        berth_types = ['Window', 'Middle', 'Aisle']
+        pref_type = 'seating'
+    else:
+        berth_types = ['Lower', 'Middle', 'Upper', 'Side Lower', 'Side Upper']
+        pref_type = 'sleeper'
+ 
+    seat_counts = {bt: 0 for bt in berth_types}
+    seat_counts['rac'] = 6
+ 
+    with conn.cursor() as cursor:
+        query = """
+            SELECT berth_type, COUNT(*) FROM seat_berths
+            WHERE train_number = %s AND class_code = %s AND status = 'Available'
+            GROUP BY berth_type
+        """
+        cursor.execute(query, (train_no, class_code))
+        for row in cursor.fetchall():
+            berth_type, count = row
+            if berth_type in seat_counts:
+                seat_counts[berth_type] = count
+ 
+    seat_count_list = [seat_counts[bt] for bt in berth_types] + [seat_counts['rac']]
+ 
+    with conn.cursor() as cursor:
+        for p in passengers:
+            pref_code = p['berth']
+            allotted_berth = preference(pref_code, seat_count_list, pref_type)
+ 
+            if allotted_berth != 'waiting' and allotted_berth != 'rac':
+                seat_query = """
+                    SELECT seat_number FROM seat_berths
+                    WHERE train_number = %s AND class_code = %s AND berth_type = %s AND status = 'Available'
+                    LIMIT 1
+                """
+                cursor.execute(seat_query, (train_no, class_code, allotted_berth))
+                seat_row = cursor.fetchone()
+ 
+                if seat_row:
+                    seat_no = seat_row[0]
+                    update_query = """
+                        UPDATE seat_berths
+                        SET status = 'Booked'
+                        WHERE train_number = %s AND class_code = %s AND seat_number = %s
+                    """
+                    cursor.execute(update_query, (train_no, class_code, seat_no))
+                else:
+                    seat_no = "Waiting"
+            else:
+                seat_no = "Waiting"
+ 
+            p['berth_allotted'] = allotted_berth
+            p['seat_no'] = seat_no
+ 
+            insert_query = """
+                INSERT INTO passengers (name, age, gender, berth_preference, nationality, pnr, berth_allotted, seat_no)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_query, (
+                p['name'], int(p['age']), p['gender'], p['berth'], p['nationality'],
+                pnr, p['berth_allotted'], p['seat_no']
+            ))
+ 
+            updated_passengers.append(p)
 
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM trains WHERE train_number = %s", (session['train_number'],))
+                    row = cursor.fetchone()
+
+                    if not row:
+                        return "Train not found", 404
+
+                    train = {
+                        'number': row[0],
+                        'name': row[1],
+                        'route': row[2],
+                        'type': row[3],
+                        'classes': row[4],
+                        'departure_time': row[5],
+                        'arrival_time': row[6],
+                        'run_days': row[7],
+                        'duration': calculate_duration(row[5], row[6]),
+                    }
+
+            except Exception as e:
+                return f"Database error: {e}", 500
+ 
+ 
+        conn.commit()
+ 
+    return render_template('summary.html', train=train,pnr=pnr,class_labels=CLASS_LABELS, passengers=updated_passengers)
 
 @app.route('/book')
 def book():
@@ -156,35 +287,68 @@ def book():
                 return "Train not found", 404
 
             train = {
-                'id': row[0],
-                'number': row[1],
-                'name': row[2],
-                'route': row[3],
-                'type': row[4],
-                'classes': row[5],
-                'departure_time': row[6],
-                'arrival_time': row[7],
-                'run_days': row[8],
-                'duration': calculate_duration(row[6], row[7]),
+                'number': row[0],
+                'name': row[1],
+                'route': row[2],
+                'type': row[3],
+                'classes': row[4],
+                'departure_time': row[5],
+                'arrival_time': row[6],
+                'run_days': row[7],
+                'duration': calculate_duration(row[5], row[6]),
             }
+
+            session['train_number'] = train['number']
+
 
     except Exception as e:
         return f"Database error: {e}", 500
 
-    return render_template('booking.html',
+    return render_template('passenger-details.html',
                            train=train,
                            class_code=class_code,
                            date=date,
-                           wl=status,
                            class_labels=CLASS_LABELS)
 
 @app.route('/confirm_booking', methods=['POST'])
 def confirm_booking():
-    train = request.form['train']
-    cls = request.form['class']
-    date = request.form['date']
-    status = request.form['status']
-    return f"Booking confirmed for Train {train} on {date} in {cls} ({status})"
+    if request.method == 'POST':
+        form = request.form
+        passengers = {}
+ 
+        for key in form:
+            if '-' in key:
+                field, num = key.split('-')
+                if num not in passengers:
+                    passengers[num] = {}
+                passengers[num][field] = form[key]
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM trains WHERE train_number = %s", (session['train_number'],))
+            row = cursor.fetchone()
+
+        if not row:
+            return "Train not found", 404
+
+        train = {
+            'number': row[0],
+            'name': row[1],
+            'route': row[2],
+            'type': row[3],
+            'classes': row[4],
+            'departure_time': row[5],
+            'arrival_time': row[6],
+            'run_days': row[7],
+            'duration': calculate_duration(row[5], row[6]),
+        }
+
+    except Exception as e:
+        return f"Database error: {e}", 500
+ 
+    session['passengers'] = list(passengers.values())
+    session['class_code'] = form.get('class_code')
+    return render_template('confirmation.html',train=train ,passengers=session['passengers'],class_labels=CLASS_LABELS)
 
 @app.route('/login', methods=['GET','POST'])
 def login_user():

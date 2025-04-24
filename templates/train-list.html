@@ -118,13 +118,8 @@
                 html += '<div class="d-flex gap-3" id="availability-cards">';
 
                 data.forEach(item => {
-                    let wl_value = null;
-                    const wl_status = item.wl;
+                    let availabilityStatus = item.availability;
                     const date = item.date;
-
-                    if (wl_status && wl_status.startsWith('WL')) {
-                        wl_value = wl_status.split(' ')[1];
-                    }
 
                     html += `
                         <div class="card p-2 selectable-card text-center"
@@ -132,9 +127,9 @@
                             data-train="${trainNumber}"
                             data-class="${classCode}"
                             data-date="${date}"
-                            data-wl="${wl_value || wl_status}">
+                            data-availability="${availabilityStatus}">
                             <div><strong>${date}</strong></div>
-                            <div>${wl_value ? 'WL ' + wl_value : wl_status}</div>
+                            <div>${availabilityStatus}</div>
                         </div>`;
                 });
 
@@ -187,10 +182,23 @@
 
 
     
-    function bookNow(train, cls, date, wl) {
-        const url = `/book?train=${train}&class=${cls}&date=${encodeURIComponent(date)}&status=${encodeURIComponent(wl)}`;
-        window.location.href = url;
+    function bookNow(train, cls, date, wlText) {
+    // Extract status type: 'available', 'rac', 'wl'
+    let status = wlText.toLowerCase().split(':')[0].trim();
+ 
+    // If Available: 0 → check fallback to RAC or WL
+    let count = parseInt(wlText.split(':')[1]?.trim()) || 0;
+    if (status === 'available' && count === 0) {
+        if (wlText.includes('RAC')) {
+            status = 'rac';
+        } else if (wlText.includes('WL')) {
+            status = 'wl';
+        }
     }
+ 
+    const url = `/book?train=${train}&class=${cls}&date=${encodeURIComponent(date)}&status=${encodeURIComponent(status)}`;
+    window.location.href = url;
+}
 
 
 
