@@ -5,11 +5,11 @@ import random, string
 
 
 conn = pymysql.connect(
-    host="127.0.0.1",       
-    user="root",
-    password="root",
-    database="train-booking",
-    #port=3306,  
+    host="mydb.chss26eaa57v.ap-south-1.rds.amazonaws.com",       
+    user="admin",
+    password="trainbooking",
+    database="Train_Booking",
+    port=3306,  
 )
 
 
