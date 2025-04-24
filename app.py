@@ -127,14 +127,25 @@ def search():
     from_station = request.args.get('from', '').strip()
     to_station = request.args.get('to', '').strip()
     class_type = request.args.get('class_type', '').strip()
+    travel_date = request.args.get('date','').strip()
+
 
     matching_trains = []
 
     with conn.cursor() as cursor:
-        cursor.execute("SELECT * FROM trains")
+        query = """
+                        select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes, ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date
+                        from trains t
+                        join train_schedule ts1 on t.train_number = ts1.train_number 
+                        join train_schedule ts2 on t.train_number = ts2 .train_number
+                        join availability a on t.train_number = a.train_number
+                        where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s;
+                       """
+        val = (from_station, to_station,travel_date,)
+        cursor.execute(query, val)
         trains = cursor.fetchall()
         for train1 in trains:
-            train= {
+            train = {
                 'number': train1[0],
                 'name': train1[1],
                 'route': train1[2],
@@ -143,6 +154,7 @@ def search():
                 'departure_time': train1[5],
                 'arrival_time': train1[6],
                 'days': train1[7],
+                'travel_date': train1[8]
             }
             route = [station.strip().lower() for station in train['route'].split(',')]
             if from_station.lower() in route and to_station.lower() in route:
@@ -155,7 +167,7 @@ def search():
                         continue
 
                     train['duration'] = calculate_duration(train['departure_time'], train['arrival_time'])
-                    train['journey_date'] = datetime.now().strftime('%Y-%m-%d')
+                    train['journey_date'] = train['travel_date']
                     matching_trains.append(train)
 
     return render_template('train-list.html',
