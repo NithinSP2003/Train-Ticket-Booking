@@ -8,8 +8,8 @@ conn = pymysql.connect(
     host="mydb.chss26eaa57v.ap-south-1.rds.amazonaws.com",       
     user="admin",
     password="trainbooking",
-    database="train-booking",
-    #port=3306,  
+    database="Train_Booking",
+    port=3306,  
 )
 
 
