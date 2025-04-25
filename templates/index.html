@@ -111,7 +111,7 @@
               <select name="from">
                 <option value="" disabled selected>From Station</option>
                 {% for station in stations %}
-                <option value="options">{{ station }}</option>
+                <option>{{ station }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -121,10 +121,10 @@
           </div>
           <div class="mb-2" style="margin-bottom: 5% !important;">
             <div class="custom-select-wrapper">
-              <select name="from">
-                <option value="" disabled selected>From Station</option>
+              <select name="to">
+                <option value="" disabled selected>To Station</option>
                 {% for station in stations %}
-                <option value="options">{{ station }}</option>
+                <option>{{ station }}</option>
                 {% endfor %}
               </select>
             </div>          

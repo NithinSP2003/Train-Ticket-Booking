@@ -173,6 +173,9 @@ def index():
 @app.route('/ticket-list')
 def search():
     from_station = request.args.get('from', '').strip()
+    if from_station:
+        print(from_station)
+    else: print('no from')
     to_station = request.args.get('to', '').strip()
     class_type = request.args.get('class_type', '').strip()
     travel_date = request.args.get('date','').strip()
