@@ -167,11 +167,14 @@
     }
 
     function showBookingButton(container, train, cls, date, wl, from, to) {
-        const existingBtn = container.querySelector('.booking-button');
-    if (existingBtn) existingBtn.remove();
+    const existingBtn1 = container.querySelector('.btn-warning');
+    if (existingBtn1) existingBtn1.remove();
+
+    const existingBtn2 = container.querySelector('.fare');
+    if (existingBtn2) existingBtn2.remove();
 
     const btnHtml = `
-        <div class="row" style="justify-content: flex-end;">
+        <div class="row fare" style="justify-content: flex-end;">
             <div class="col-md-4 text-end"></div>
             <div class="col-md-3">
                 <p class="fare-btn" id="fare">Calculating fare...</p>
