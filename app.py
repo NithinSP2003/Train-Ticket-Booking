@@ -473,7 +473,7 @@ def signup_user():
         user_password = request.form['user-password']
         password_confirm = request.form['user-password-val']
 
-        sql = "INSERT INTO users (user_name, full_name, email, phone_number,password) VALUES (%s, %s, %s, %s, %s)"
+        sql = "INSERT INTO users (user_name, full_name, email, number,password) VALUES (%s, %s, %s, %s, %s)"
         val = (user_name, full_name, user_email,user_number,user_password)
         cursor.execute(sql, val)
         conn.commit()
