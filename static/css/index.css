@@ -204,7 +204,7 @@ body {
     overflow: hidden;
     background: #fff;
     box-shadow: 0 0 30px rgba(0, 0, 0, 1);
-    margin: 5% auto;
+    margin: 8% auto;
     align-items: center;
     justify-content: center;
     display: flex;
@@ -212,6 +212,8 @@ body {
     align-items: stretch;
     flex-direction: column;
     margin-right: 5% !important;
+    max-height: 67%;
+
 
 }
 

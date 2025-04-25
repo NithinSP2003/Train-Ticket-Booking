@@ -176,8 +176,10 @@ def search():
     to_station = request.args.get('to', '').strip()
     class_type = request.args.get('class_type', '').strip()
     travel_date = request.args.get('date','').strip()
-
-
+    session['from'] = from_station
+    session['to'] = to_station
+    session['date'] = travel_date
+    print(session['date'])
     matching_trains = []
 
     with conn.cursor() as cursor:
@@ -296,12 +298,12 @@ def summary():
             p['seat_no'] = seat_no
  
             insert_query = """
-                INSERT INTO passengers (name, age, gender, berth_preference, nationality, pnr, berth_allotted, seat_no)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO passengers (passenger_name, age, gender, berth_preference, nationality, pnr_number, berth_allotted, seat_no,user_id,train_number)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(insert_query, (
                 p['name'], int(p['age']), p['gender'], p['berth'], p['nationality'],
-                pnr, p['berth_allotted'], p['seat_no']
+                pnr, p['berth_allotted'], p['seat_no'], search['user_id'], session['train_number']
             ))
  
             updated_passengers.append(p)
@@ -337,8 +339,7 @@ def summary():
 @app.route('/book')
 def book():
     train_number = request.args.get('train')
-    class_code = request.args.get('class')
-    date = request.args.get('date')
+    session['class_code'] = request.args.get('class')
     status = request.args.get('status')
 
     if not train_number:
@@ -346,7 +347,15 @@ def book():
 
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM trains WHERE train_number = %s", (train_number,))
+            cursor.execute("""
+                            select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes,
+                            ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date,ts1.station_name,ts2.station_name
+                            from trains t
+                            join train_schedule ts1 on t.train_number = ts1.train_number 
+                            join train_schedule ts2 on t.train_number = ts2 .train_number
+                            join availability a on t.train_number = a.train_number
+                            where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s and t.train_number = %s
+                        """, (session['from'], session['to'], session['date'], train_number,))
             row = cursor.fetchone()
 
             if not row:
@@ -362,6 +371,10 @@ def book():
                 'arrival_time': row[6],
                 'run_days': row[7],
                 'duration': calculate_duration(row[5], row[6]),
+                'journey_date' : row[8],
+                'from' : row[9],
+                'to' : row[10]
+
             }
 
             session['train_number'] = train['number']
@@ -372,8 +385,8 @@ def book():
 
     return render_template('passenger-details.html',
                            train=train,
-                           class_code=class_code,
-                           date=date,
+                           class_code=session['class_code'],
+                           date=session['date'],
                            class_labels=CLASS_LABELS)
 
 @app.route('/confirm_booking', methods=['POST'])
@@ -391,30 +404,41 @@ def confirm_booking():
 
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM trains WHERE train_number = %s", (session['train_number'],))
+            cursor.execute("""
+                            select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes,
+                            ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date,ts1.station_name,ts2.station_name
+                            from trains t
+                            join train_schedule ts1 on t.train_number = ts1.train_number 
+                            join train_schedule ts2 on t.train_number = ts2 .train_number
+                            join availability a on t.train_number = a.train_number
+                            where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s and t.train_number = %s
+                        """, (session['from'], session['to'], session['date'], session['train_number'],))
             row = cursor.fetchone()
 
-        if not row:
-            return "Train not found", 404
+            if not row:
+                return "Train not found", 404
 
-        train = {
-            'number': row[0],
-            'name': row[1],
-            'route': row[2],
-            'type': row[3],
-            'classes': row[4],
-            'departure_time': row[5],
-            'arrival_time': row[6],
-            'run_days': row[7],
-            'duration': calculate_duration(row[5], row[6]),
-        }
+            train = {
+                'number': row[0],
+                'name': row[1],
+                'route': row[2],
+                'type': row[3],
+                'classes': row[4],
+                'departure_time': row[5],
+                'arrival_time': row[6],
+                'run_days': row[7],
+                'duration': calculate_duration(row[5], row[6]),
+                'journey_date' :row[8],
+                'from' : row[9],
+                'to' : row[10]
+
+            }
 
     except Exception as e:
         return f"Database error: {e}", 500
  
     session['passengers'] = list(passengers.values())
-    session['class_code'] = form.get('class_code')
-    return render_template('confirmation.html',train=train ,passengers=session['passengers'],class_labels=CLASS_LABELS)
+    return render_template('confirmation.html',train=train, date=session['date'] ,passengers=session['passengers'],class_labels=CLASS_LABELS, class_code=session['class_code'])
 
 @app.route('/login', methods=['GET','POST'])
 def login_user():
@@ -426,7 +450,9 @@ def login_user():
         val = (user_name, user_password)
         cursor.execute(sql, val)
         result = cursor.fetchone()
+        session['user_id']= result[0]
         if result:
+            session['user_id']= result[0]
             session['user_logged_in'] = True
             session['user_name'] = result[1] 
             return redirect(url_for('index'))
@@ -447,7 +473,7 @@ def signup_user():
         user_password = request.form['user-password']
         password_confirm = request.form['user-password-val']
 
-        sql = "INSERT INTO users (user_name, full_name, email, number, password) VALUES (%s, %s, %s, %s, %s)"
+        sql = "INSERT INTO users (user_name, full_name, email, phone_number,password) VALUES (%s, %s, %s, %s, %s)"
         val = (user_name, full_name, user_email,user_number,user_password)
         cursor.execute(sql, val)
         conn.commit()
