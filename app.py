@@ -303,7 +303,7 @@ def summary():
             """
             cursor.execute(insert_query, (
                 p['name'], int(p['age']), p['gender'], p['berth'], p['nationality'],
-                pnr, p['berth_allotted'], p['seat_no'], search['user_id'], session['train_number']
+                pnr, p['berth_allotted'], p['seat_no'], session['user_id'], session['train_number']
             ))
  
             updated_passengers.append(p)
