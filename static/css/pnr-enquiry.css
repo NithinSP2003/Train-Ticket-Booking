@@ -1,0 +1,91 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: white;
+    color: black;
+    padding: 30px;
+}
+
+.ticket-box {
+    border: 1px solid black;
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.ticket-header {
+    text-align: center;
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.section {
+    border-top: 1px solid black;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.info-table, .passenger-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.info-table td, .passenger-table th, .passenger-table td {
+    border: 1px solid black;
+    padding: 5px;
+    font-size: 14px;
+}
+
+.passenger-table th {
+    background-color: #f2f2f2;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.note {
+    font-size: 12px;
+    margin-top: 15px;
+}
+
+/* Form style */
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+    margin-bottom: 20px;
+}
+
+.form-container input, .form-container button {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.form-container button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.form-container button:hover {
+    background-color: #2980b9;
+}
+
+/* PDF Button Style */
+#downloadBtn {
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+#downloadBtn:hover {
+    background-color: #27ae60;
+}

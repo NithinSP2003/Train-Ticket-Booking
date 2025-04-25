@@ -1,0 +1,45 @@
+body {
+    background-color: #121212;  /* Dark background */
+    color: white;  /* White text */
+    font-family: 'Roboto', sans-serif;  /* Apply Roboto font */
+}
+.container {
+    background-color: #1e1e1e;  /* Slightly lighter dark background for the container */
+    border-radius: 8px;
+    padding: 30px;
+}
+.card {
+    background-color: #2c2c2c;  /* Dark grey card background */
+    border: 1px solid #444;
+    margin-bottom: 20px;
+}
+.card-header {
+    background-color: #444;  /* Dark grey card header */
+    color: white;
+    font-weight: bold;
+}
+.btn-danger {
+    background-color: #e74c3c;
+    border-color: #c0392b;
+}
+.btn-danger:hover {
+    background-color: #c0392b;
+    border-color: #e74c3c;
+}
+.list-group-item {
+    background-color: #2c2c2c;  /* Dark grey list item background */
+    border: none;
+    color: white;
+}
+.list-group-item input[type="checkbox"] {
+    margin-right: 10px;
+}
+.alert-success {
+    background-color: #27ae60;  /* Green color for success alert */
+    color: white;
+    border-radius: 5px;
+    padding: 10px;
+}
+.alert-success strong {
+    font-weight: bold;
+}

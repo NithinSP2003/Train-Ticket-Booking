@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IRCTC Ticket</title>
+    <link rel="stylesheet" href="../static/css/pnr-enquiry.css">
+</head>
+<body>
+
+<div class="form-container">
+    <h2>PNR Enquiry</h2>
+    <form method="POST">
+        <input type="text" id="pnr_number" name="pnr_number" placeholder="Enter PNR Number" required>
+        <button type="submit">Check Status</button>
+    </form>
+</div>
+
+{% if ticket_details %}
+    <div class="ticket-box" id="ticketContent">
+        <div class="ticket-header">INDIAN RAILWAYS</div>
+        <div class="ticket-header" style="font-size: 16px;">PASSENGER RESERVATION SYSTEM</div>
+        <div class="ticket-header" style="font-size: 14px;">IRCTC e-Ticket</div>
+
+        <div class="section">
+            <table class="info-table">
+                <tr>
+                    <td><span class="bold">PNR:</span> {{ pnr_number }}</td>
+                    <td><span class="bold">Train No:</span> {{ train_numb }}</td>
+                    <td><span class="bold">Class:</span> {{ class_code }}</td>
+                </tr>
+                <tr>
+                    <td><span class="bold">Date of Journey:</span> {{ travel_date }}</td>
+                    <td><span class="bold">From:</span> {{ from_station }}</td>
+                    <td><span class="bold">To:</span> {{ to_station }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="bold">Passenger Details</div>
+            <table class="passenger-table">
+                <thead>
+                    <tr>
+                        <th>Sl. No</th>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Seat No</th>
+                        <th>Berth</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for passenger in ticket_details %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ passenger[1] }}</td>
+                        <td>{{ passenger[2] }}</td>
+                        <td>{{ passenger[3] }}</td>
+                        <td>{{ passenger[8] }}</td>
+                        <td>{{ passenger[7] }}</td>
+                        <td>{{ passenger[10] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="note">
+            * This is a computer-generated ticket and does not require signature.<br>
+            * Please carry a valid ID proof during journey.<br>
+            * For any enquiry, call 139 or visit <a href="https://www.irctc.co.in">www.irctc.co.in</a>
+        </div>
+    </div>
+
+    <a href="{{ url_for('download_invoice', pnr_number=ticket_details[0].pnr_number) }}">
+        <button id="downloadBtn">Download Invoice (PDF)</button>
+    </a>
+{% endif %}
+
+<!-- Include jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    document.getElementById("downloadBtn").addEventListener("click", function () {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Capture the HTML content
+        const content = document.getElementById('ticketContent').innerHTML;
+
+        // Add the HTML content to the PDF
+        doc.html(content, {
+            callback: function (doc) {
+                doc.save('pnr_ticket.pdf'); // Save the file as a PDF
+            },
+            margin: [10, 10, 10, 10], // Add margins
+            x: 10,
+            y: 10
+        });
+    });
+</script>
+
+</body>
+</html>

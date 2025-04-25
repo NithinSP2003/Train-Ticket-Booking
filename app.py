@@ -1,7 +1,8 @@
-from flask import Flask, request, render_template, redirect, url_for,flash,session, jsonify
-import pymysql
+from flask import Flask, request, render_template, redirect, url_for,flash,session, jsonify, send_file
+import pymysql, io
 from datetime import datetime, timedelta, date
 import random, string
+from fpdf import FPDF
 
 
 conn = pymysql.connect(
@@ -240,8 +241,8 @@ def logout():
 def summary():
     pnr = generate_pnr()
     passengers = session.get('passengers', [])
-    train_no = 12633  #session.get('train_no')
-    class_code = '2S' #session.get('class_code')
+    train_no = session.get('train_number',[])
+    class_code = session.get('class_code', [])
  
     updated_passengers = []
  
@@ -256,26 +257,25 @@ def summary():
     seat_counts = {bt: 0 for bt in berth_types}
     seat_counts['rac'] = 6
  
-    with conn.cursor() as cursor:
-        query = """
+    cursor = conn.cursor()
+    query = """
             SELECT berth_type, COUNT(*) FROM seat_berths
             WHERE train_number = %s AND class_code = %s AND status = 'Available'
             GROUP BY berth_type
         """
-        cursor.execute(query, (train_no, class_code))
-        for row in cursor.fetchall():
-            berth_type, count = row
-            if berth_type in seat_counts:
-                seat_counts[berth_type] = count
+    cursor.execute(query, (train_no, class_code))
+    for row in cursor.fetchall():
+        berth_type, count = row
+        if berth_type in seat_counts:
+            seat_counts[berth_type] = count
  
     seat_count_list = [seat_counts[bt] for bt in berth_types] + [seat_counts['rac']]
  
-    with conn.cursor() as cursor:
-        for p in passengers:
-            pref_code = p['berth']
-            allotted_berth = preference(pref_code, seat_count_list, pref_type)
+    for p in passengers:
+        pref_code = p['berth']
+        allotted_berth = preference(pref_code, seat_count_list, pref_type)
  
-            if allotted_berth != 'waiting' and allotted_berth != 'rac':
+        if allotted_berth != 'waiting' and allotted_berth != 'rac':
                 seat_query = """
                     SELECT seat_number FROM seat_berths
                     WHERE train_number = %s AND class_code = %s AND berth_type = %s AND status = 'Available'
@@ -294,25 +294,25 @@ def summary():
                     cursor.execute(update_query, (train_no, class_code, seat_no))
                 else:
                     seat_no = "Waiting"
-            else:
+        else:
                 seat_no = "Waiting"
  
-            p['berth_allotted'] = allotted_berth
-            p['seat_no'] = seat_no
+        p['berth_allotted'] = allotted_berth
+        p['seat_no'] = seat_no
  
-            insert_query = """
-                INSERT INTO passengers (passenger_name, age, gender, berth_preference, nationality, pnr_number, berth_allotted, seat_no,user_id,train_number)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        insert_query = """
+                INSERT INTO passengers (passenger_name, age, gender, berth_preference, nationality, pnr_number, berth_allotted, seat_no,user_id,train_number,from_station, to_station, class, travel_date, booking_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(insert_query, (
+        cursor.execute(insert_query, (
                 p['name'], int(p['age']), p['gender'], p['berth'], p['nationality'],
-                pnr, p['berth_allotted'], p['seat_no'], session['user_id'], session['train_number']
+                pnr, p['berth_allotted'], p['seat_no'], session['user_id'], session['train_number'],
+                session['from'],session['to'],session['class_code'], session['date'],'Confirmed'
             ))
  
-            updated_passengers.append(p)
+        updated_passengers.append(p)
 
-            try:
-                with conn.cursor() as cursor:
+        try:
                     cursor.execute("SELECT * FROM trains WHERE train_number = %s", (session['train_number'],))
                     row = cursor.fetchone()
 
@@ -331,7 +331,7 @@ def summary():
                         'duration': calculate_duration(row[5], row[6]),
                     }
 
-            except Exception as e:
+        except Exception as e:
                 return f"Database error: {e}", 500
  
  
@@ -484,6 +484,141 @@ def signup_user():
     
     elif request.method == 'GET':
         return render_template('signup.html')
+
+
+
+
+@app.route('/pnr_enquiry', methods=['GET', 'POST'])
+def pnr_enquiry():
+    ticket_details = None  
+    train_numb = None
+    from_station = None
+    to_station = None
+    class_code = None
+    travel_date = None
+    pnr_number = None
+
+    if request.method == 'POST':
+        pnr_number = request.form['pnr_number']
+
+        if pnr_number:
+            cursor = conn.cursor()
+
+            # Fetch the details of passengers for the given PNR number
+            cursor.execute("SELECT * FROM passengers WHERE pnr_number = %s", (pnr_number,))
+            ticket_details = cursor.fetchall()
+
+            if ticket_details:
+                train_numb = ticket_details[0][11]
+                from_station = ticket_details[0][12]
+                to_station = ticket_details[0][13]
+                class_code = ticket_details[0][14]
+                travel_date = ticket_details[0][15]
+                pnr_number = ticket_details[0][5]
+            else:
+                flash("No records found for this PNR number.", "danger")
+
+    return render_template('pnr-enquiry.html',
+                       ticket_details=ticket_details,
+                       train_numb=train_numb,
+                       from_station=from_station,
+                       to_station=to_station,
+                       class_code=class_code,
+                       travel_date=travel_date,
+                       pnr_number=pnr_number)
+
+
+
+
+@app.route('/download_invoice/<pnr_number>')
+def download_invoice(pnr_number):
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM passengers WHERE pnr_number = %s", (pnr_number,))
+    ticket_details = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    if not ticket_details:
+        flash("No records found for this PNR number.", "danger")
+        return redirect(url_for('pnr_enquiry'))
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.cell(200, 10, txt="INDIAN RAILWAYS - IRCTC e-Ticket", ln=True, align='C')
+    pdf.cell(200, 10, txt="PNR: " + ticket_details[0]['pnr_number'], ln=True)
+    pdf.cell(200, 10, txt="Train No: " + ticket_details[0]['train_number'], ln=True)
+    
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(200, 10, txt="Passenger Details", ln=True)
+    pdf.set_font("Arial", size=11)
+
+    headers = ["Name", "Age", "Gender", "Seat", "Berth", "Status"]
+    for header in headers:
+        pdf.cell(32, 10, header, border=1)
+    pdf.ln()
+
+    for p in ticket_details:
+        pdf.cell(32, 10, str(p['passenger_name']), border=1)
+        pdf.cell(32, 10, str(p['passenger_age']), border=1)
+        pdf.cell(32, 10, str(p['gender']), border=1)
+        pdf.cell(32, 10, str(p['seat_no']), border=1)
+        pdf.cell(32, 10, str(p['berth_allotted'] or p['berth_preference']), border=1)
+        pdf.cell(32, 10, str(p['booking_status']), border=1)
+        pdf.ln()
+
+    pdf.ln(10)
+    pdf.set_font("Arial", size=10)
+    pdf.multi_cell(0, 10, "* This is a computer-generated ticket and does not require signature.\n* Please carry a valid ID proof during journey.\n* For enquiry, call 139 or visit www.irctc.co.in")
+
+    # Convert PDF to byte stream
+    pdf_bytes = pdf.output(dest='S').encode('latin1')  # Use 'latin1' for binary-safe string
+    pdf_stream = io.BytesIO(pdf_bytes)
+
+    return send_file(pdf_stream, mimetype='application/pdf',
+                     download_name=f"{pnr_number}_ticket.pdf", as_attachment=True)
+
+
+@app.route('/cancel_tickets', methods=['GET', 'POST'])
+def cancel_tickets():
+    user_id = session['user_id']  # Hardcoded for now; replace with session['user_id'] later
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        selected_ids = request.form.getlist('passenger_ids')
+        for pid in selected_ids:
+            cursor.execute("SELECT seat_no, train_number FROM passengers WHERE passenger_id = %s", (pid,))
+            result = cursor.fetchone()
+            if result:
+                seat_no = result[0]
+                train_number = result[1]
+                # Cancel ticket
+                cursor.execute("UPDATE passengers SET booking_status = 'Cancelled' WHERE passenger_id = %s", (pid,))
+                # Free seat
+                cursor.execute("UPDATE seat_berths SET status = 'Available' WHERE seat_number = %s AND train_number = %s", (seat_no, train_number))
+        conn.commit()
+
+        flash("Tickets cancelled successfully.")
+        return redirect(url_for('cancel_tickets'))
+
+    # Fetch PNRs for this user
+    cursor.execute("SELECT DISTINCT pnr_number FROM passengers WHERE user_id = %s", (user_id,))
+    pnrs = cursor.fetchall()
+    passengers_by_pnr = {}
+
+    for row in pnrs:
+        pnr = row[0]
+        cursor.execute("SELECT * FROM passengers WHERE pnr_number = %s AND user_id = %s", (pnr, user_id))
+        passengers = cursor.fetchall()
+        passengers_by_pnr[pnr] = passengers
+        print(passengers_by_pnr)
+
+    return render_template('cancel-ticket.html', passengers_by_pnr=passengers_by_pnr)
+
+
 
 
 if __name__ == '__main__':
