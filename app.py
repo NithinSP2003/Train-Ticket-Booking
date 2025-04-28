@@ -27,6 +27,15 @@ CLASS_LABELS = {
     'GN': 'General'
 }
 
+station_name = [
+    "Agra", "Ambala", "Asansol", "Bangalore", "Bhopal", "Chennai", 
+    "Dindigul", "Erode", "Firozpur", "Gaya", "Gwalior", "Howrah", 
+    "Jhansi", "Kanyakumari", "Karur", "Kota", "Ludhiana", "Madurai", 
+    "Manamadurai", "Mughalsarai", "Mumbai", "Nagpur", "New Delhi", 
+    "Rameswaram", "Salem", "Surat", "Tirunelveli", "Trichy", "Vadodara", 
+    "Villupuram"
+]
+
 # ---> Booking Page <---
 
 @app.route('/get_availability')
@@ -164,12 +173,8 @@ def preference(pref, L, pref_type):
 
 @app.route('/')
 def index():
-    cursor = conn.cursor()
-    cursor.execute("""select station_name from station
-                        order by station_name;""")    
-    stations = [row[0] for row in cursor.fetchall()]
     today = date.today().isoformat()
-    return render_template('index.html', stations=stations, today=today, class_labels=CLASS_LABELS)
+    return render_template('index.html', stations=station_name, today=today, class_labels=CLASS_LABELS)
 
 def get_station_and_class(request):
     from_station = request.form.get('from', '').strip() or request.args.get('from', '').strip()
@@ -241,7 +246,8 @@ def search():
                         from_station=from_station,
                         to_station=to_station,
                         class_type=class_type,
-                        class_labels=CLASS_LABELS)
+                        class_labels=CLASS_LABELS,
+                        station_name=station_name)
 
 @app.route('/ticket-list1', methods=['GET'])
 def search_loggedin():

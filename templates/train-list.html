@@ -68,6 +68,51 @@
                         Trains from {{ from_station }} to {{ to_station }} 
                     </h3>
 
+                    <div class="filter-section mb-4">
+                        <form method="GET" action="{{ url_for('search') }}">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="from_station" class="form-label">From Station</label>
+                                    <select class="form-select" id="from_station" name="from">
+                                        <option value="{{ session.get('from') }}" selected>{{ session.get('from') }}</option>
+                                        <!-- Example static options, replace with dynamic values -->
+                                        {% for station in station_name %}
+                                        <option>{{ station }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="to_station" class="form-label">To Station</label>
+                                    <select class="form-select" id="to_station" name="to">
+                                        <option value="{{ session.get('to') }}"  selected>{{ session.get('to') }}</option>
+                                        <!-- Example static options, replace with dynamic values -->
+                                        {% for station in station_name %}
+                                        <option>{{ station }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="class_type" class="form-label">Class Type</label>
+                                    <select class="form-select" id="class_type" name="class">
+                                        <option value="{{ session.get('class_code') }}" selected>{{ session.get('class_code') }}</option>
+                                        <!-- Example static options, replace with dynamic values -->
+                                        {% for cls in class_labels%}
+                                        <option>{{ cls }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="travel_date">Travel Date</label>
+                                    <input type="date" id="travel_date" name="date" class="form-control" style="margin-top: 3%;" value="{{ session.get('date') }}">
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <button type="submit" class="btn btn-primary" style="width: 100%;">Filter</button>
+                            </div>
+                        </form>
+                    </div>
+
+
                     {% if trains %}
                         {% for train in trains %}
                             <div class="card shadow-sm border-start border-4 border-primary rounded-4">
