@@ -171,65 +171,77 @@ def index():
     today = date.today().isoformat()
     return render_template('index.html', stations=stations, today=today, class_labels=CLASS_LABELS)
 
-@app.route('/ticket-list')
+@app.route('/ticket-list', methods=['POST', 'GET'])
 def search():
-    from_station = request.args.get('from', '').strip()
-    if from_station:
-        print(from_station)
-    else: print('no from')
-    to_station = request.args.get('to', '').strip()
-    class_type = request.args.get('class_type', '').strip()
-    travel_date = request.args.get('date','').strip()
-    session['from'] = from_station
-    session['to'] = to_station
-    session['date'] = travel_date
-    print(session['date'])
-    matching_trains = []
+    if request.method == 'GET':
+        from_station = request.args.get('from', '').strip()
+        if from_station:
+            print(from_station)
+        else: print('no from')
+        to_station = request.args.get('to', '').strip()
+        class_type = request.args.get('class_type', '').strip()
+        travel_date = request.args.get('date','').strip()
+        session['from'] = from_station
+        session['to'] = to_station
+        session['date'] = travel_date
+        print(session['date'])
+        matching_trains = []
 
-    with conn.cursor() as cursor:
-        query = """
-                        select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes, ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date
-                        from trains t
-                        join train_schedule ts1 on t.train_number = ts1.train_number 
-                        join train_schedule ts2 on t.train_number = ts2 .train_number
-                        join availability a on t.train_number = a.train_number
-                        where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s;
-                       """
-        val = (from_station, to_station,travel_date,)
-        cursor.execute(query, val)
-        trains = cursor.fetchall()
-        for train1 in trains:
-            train = {
-                'number': train1[0],
-                'name': train1[1],
-                'route': train1[2],
-                'type': train1[3],
-                'classes': train1[4],
-                'departure_time': train1[5],
-                'arrival_time': train1[6],
-                'days': train1[7],
-                'travel_date': train1[8]
-            }
-            route = [station.strip().lower() for station in train['route'].split(',')]
-            if from_station.lower() in route and to_station.lower() in route:
-                if route.index(from_station.lower()) < route.index(to_station.lower()):
-                    if class_type and class_type not in train['classes'].split(','):
-                        continue
+        with conn.cursor() as cursor:
+            query = """
+                            select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes, ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date
+                            from trains t
+                            join train_schedule ts1 on t.train_number = ts1.train_number 
+                            join train_schedule ts2 on t.train_number = ts2 .train_number
+                            join availability a on t.train_number = a.train_number
+                            where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s;
+                        """
+            val = (from_station, to_station,travel_date,)
+            cursor.execute(query, val)
+            trains = cursor.fetchall()
+            for train1 in trains:
+                train = {
+                    'number': train1[0],
+                    'name': train1[1],
+                    'route': train1[2],
+                    'type': train1[3],
+                    'classes': train1[4],
+                    'departure_time': train1[5],
+                    'arrival_time': train1[6],
+                    'days': train1[7],
+                    'travel_date': train1[8]
+                }
+                route = [station.strip().lower() for station in train['route'].split(',')]
+                if from_station.lower() in route and to_station.lower() in route:
+                    if route.index(from_station.lower()) < route.index(to_station.lower()):
+                        if class_type and class_type not in train['classes'].split(','):
+                            continue
 
-                    # Skip trains with missing times
-                    if not train['departure_time'] or not train['arrival_time']:
-                        continue
+                        # Skip trains with missing times
+                        if not train['departure_time'] or not train['arrival_time']:
+                            continue
 
-                    train['duration'] = calculate_duration(train['departure_time'], train['arrival_time'])
-                    train['journey_date'] = train['travel_date']
-                    matching_trains.append(train)
+                        train['duration'] = calculate_duration(train['departure_time'], train['arrival_time'])
+                        train['journey_date'] = train['travel_date']
+                        matching_trains.append(train)
 
-    return render_template('train-list.html',
-                           trains=matching_trains,
-                           from_station=from_station,
-                           to_station=to_station,
-                           class_type=class_type,
-                           class_labels=CLASS_LABELS)
+        return render_template('train-list.html',
+                            trains=matching_trains,
+                            from_station=from_station,
+                            to_station=to_station,
+                            class_type=class_type,
+                            class_labels=CLASS_LABELS)
+
+    elif request.method == 'POST':
+        from_station = request.form.get('from', '').strip()
+        to_station = request.form.get('to', '').strip()
+        class_type = request.form.get('class_type', '').strip()
+        travel_date = request.form.get('date','').strip()
+        session['from'] = from_station
+        session['to'] = to_station
+        session['date'] = travel_date
+        print(session['date'])
+        return redirect(url_for('search'))
 
 @app.route('/logout')
 def logout():
@@ -462,7 +474,7 @@ def login_user():
         else:
             return "Invalid credentials"
     elif request.method == 'GET':
-        return render_template('login.html')
+        return render_template('login.html', from_location = session['from'],to_location = session['to'],travel_date = session['date'])
 
 
 @app.route('/signup', methods=['GET','POST'])

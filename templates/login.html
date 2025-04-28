@@ -12,6 +12,22 @@
     <div class="container-box">
         <div class="left-panel"><div style="display: flex; justify-content: center; font-size: 30px;">
         <h4 class="mb-3"><b>Login</b></h4></div>
+        {% if from_location %}
+        <form action="{{ url_for('search') }}" method="POST">
+            <div class="mb-2">
+            <input type="text" class="form-control" placeholder="User Name" name="user-name" required>
+            </div>
+            <div class="mb-2">
+            <input type="password" class="form-control" placeholder="Password" name="user-password" required>
+            </div>
+            <div class="mb-2">
+            <button type="submit" class="submit-btn">Log In</button>
+            </div>
+            <input type="hidden" name="from_location" value="{{ from_location }}">
+            <input type="hidden" name="to_location" value="{{ to_location }}">
+            <input type="hidden" name="date" value="{{ date }}">
+        </form>
+        {% else %}
         <form action="{{ url_for('login_user') }}" method="POST">
             <div class="mb-2">
             <input type="text" class="form-control" placeholder="User Name" name="user-name" required>
@@ -23,6 +39,7 @@
             <button type="submit" class="submit-btn">Log In</button>
             </div>
         </form>
+        {% endif %}
         <div class="small-text mt-4 d-flex justify-content-between">
             <span>New to the App? <a href="{{ url_for('signup_user') }}">Sign up</a></span>
             <a href="#">Terms & Conditions</a>
