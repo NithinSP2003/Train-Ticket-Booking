@@ -171,32 +171,98 @@ def index():
     today = date.today().isoformat()
     return render_template('index.html', stations=stations, today=today, class_labels=CLASS_LABELS)
 
+def get_station_and_class(request):
+    from_station = request.form.get('from', '').strip() or request.args.get('from', '').strip()
+    to_station = request.form.get('to', '').strip() or request.args.get('to', '').strip()
+    class_type = request.form.get('class', '').strip() or request.args.get('class', '').strip()
+    travel_date = request.form.get('date', '').strip() or request.args.get('date', '').strip()
+    return from_station, to_station, class_type,travel_date
+
 @app.route('/ticket-list', methods=['POST', 'GET'])
 def search():
-    if request.method == 'GET':
-        from_station = request.args.get('from', '').strip()
-        if from_station:
-            print(from_station)
-        else: print('no from')
-        to_station = request.args.get('to', '').strip()
-        class_type = request.args.get('class_type', '').strip()
-        travel_date = request.args.get('date','').strip()
-        session['from'] = from_station
-        session['to'] = to_station
-        session['date'] = travel_date
-        print(session['date'])
+    from_station, to_station, class_type, travel_date = get_station_and_class(request)
+    session['from'] = from_station
+    session['to'] = to_station
+    session['date'] = travel_date
+    session['class_code'] = class_type
+        
+    matching_trains = []
+
+    with conn.cursor() as cursor:
+        query = """
+                    SELECT DISTINCT 
+                        t.train_number, t.train_name, t.route, t.train_type, t.classes,
+                        ts1.departure_time, ts2.arrival_time, t.run_days,
+                        a.travel_date,
+                    CASE 
+                        WHEN ts2.arrival_time < ts1.departure_time THEN DATE_ADD(a.travel_date, INTERVAL 1 DAY)
+                        ELSE a.travel_date
+                    END AS arrival_date
+                    FROM trains t
+                    JOIN train_schedule ts1 ON t.train_number = ts1.train_number 
+                    JOIN train_schedule ts2 ON t.train_number = ts2.train_number
+                    JOIN availability a ON t.train_number = a.train_number
+                    WHERE ts1.station_name = %s 
+                    AND ts2.station_name = %s 
+                    AND a.travel_date = %s;
+                """
+        val = (from_station, to_station, travel_date)
+        cursor.execute(query, val)
+        trains = cursor.fetchall()
+        for train1 in trains:
+            train = {
+                'number': train1[0],
+                'name': train1[1],
+                'route': train1[2],
+                'type': train1[3],
+                'classes': train1[4],
+                'departure_time': train1[5],
+                'arrival_time': train1[6],
+                'days': train1[7],
+                'travel_date': train1[8],
+                'arrival_date': train1[9]
+            }
+            route = [station.strip().lower() for station in train['route'].split(',')]
+            if from_station.lower() in route and to_station.lower() in route:
+                if route.index(from_station.lower()) < route.index(to_station.lower()):
+                    if class_type and class_type not in train['classes'].split(','):
+                        continue
+
+                    # Skip trains with missing times
+                    if not train['departure_time'] or not train['arrival_time']:
+                        continue
+
+                    train['duration'] = calculate_duration(train['departure_time'], train['arrival_time'])
+                    train['journey_date'] = train['travel_date']
+                    matching_trains.append(train)
+
+    return render_template('train-list.html',
+                        trains=matching_trains,
+                        from_station=from_station,
+                        to_station=to_station,
+                        class_type=class_type,
+                        class_labels=CLASS_LABELS)
+
+@app.route('/ticket-list1', methods=['GET'])
+def search_loggedin():
+        from_station = request.args.get('from_')
+        to_station = request.args.get('to')
+        travel_date = request.args.get('date')
+        class_type = request.args.get('class_')
+        print(from_station, to_station, class_type, travel_date,'search loggedin')
+        print('hi')
         matching_trains = []
 
         with conn.cursor() as cursor:
             query = """
-                            select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes, ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date
-                            from trains t
-                            join train_schedule ts1 on t.train_number = ts1.train_number 
-                            join train_schedule ts2 on t.train_number = ts2 .train_number
-                            join availability a on t.train_number = a.train_number
-                            where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s;
-                        """
-            val = (from_station, to_station,travel_date,)
+                        select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes, ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date
+                        from trains t
+                        join train_schedule ts1 on t.train_number = ts1.train_number 
+                        join train_schedule ts2 on t.train_number = ts2.train_number
+                        join availability a on t.train_number = a.train_number
+                        where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s;
+                    """
+            val = (from_station, to_station, travel_date)
             cursor.execute(query, val)
             trains = cursor.fetchall()
             for train1 in trains:
@@ -231,17 +297,6 @@ def search():
                             to_station=to_station,
                             class_type=class_type,
                             class_labels=CLASS_LABELS)
-
-    elif request.method == 'POST':
-        from_station = request.form.get('from', '').strip()
-        to_station = request.form.get('to', '').strip()
-        class_type = request.form.get('class_type', '').strip()
-        travel_date = request.form.get('date','').strip()
-        session['from'] = from_station
-        session['to'] = to_station
-        session['date'] = travel_date
-        print(session['date'])
-        return redirect(url_for('search'))
 
 @app.route('/logout')
 def logout():
@@ -457,25 +512,58 @@ def confirm_booking():
 
 @app.route('/login', methods=['GET','POST'])
 def login_user():
-    if request.method == 'POST':
-        cursor = conn.cursor()
-        user_name = request.form['user-name']
-        user_password = request.form['user-password']
-        sql = "SELECT * FROM users WHERE user_name = %s AND password = %s"
-        val = (user_name, user_password)
-        cursor.execute(sql, val)
-        result = cursor.fetchone()
-        session['user_id']= result[0]
-        if result:
+    if not session.get('from'):
+        if request.method == 'POST':
+            print('1')
+            cursor = conn.cursor()
+            user_name = request.form['user-name']
+            user_password = request.form['user-password']
+            sql = "SELECT * FROM users WHERE user_name = %s AND password = %s"
+            val = (user_name, user_password)
+            cursor.execute(sql, val)
+            result = cursor.fetchone()
             session['user_id']= result[0]
-            session['user_logged_in'] = True
-            session['user_name'] = result[1] 
-            return redirect(url_for('index'))
-        else:
-            return "Invalid credentials"
-    elif request.method == 'GET':
-        return render_template('login.html', from_location = session['from'],to_location = session['to'],travel_date = session['date'])
-
+            if result:
+                session['user_id']= result[0]
+                session['user_logged_in'] = True
+                session['user_name'] = result[1] 
+                return redirect(url_for('index'))
+            else:
+                return "Invalid credentials"
+        elif request.method == 'GET':
+            print('2')
+            return render_template('login.html')
+    else:
+        if request.method == 'POST':
+            print('3')
+            cursor = conn.cursor()
+            user_name = request.form['user-name']
+            user_password = request.form['user-password']
+            from_location = session.get('from')
+            to_location = session.get('to')
+            travel_date = session.get('date')
+            class_code = session.get('class_code')
+            sql = "SELECT * FROM users WHERE user_name = %s AND password = %s"
+            val = (user_name, user_password)
+            cursor.execute(sql, val)
+            result = cursor.fetchone()
+            session['user_id']= result[0]
+            if result:
+                session['user_id']= result[0]
+                session['user_logged_in'] = True
+                session['user_name'] = result[1] 
+                print(from_location)
+                print(to_location) 
+                print(travel_date)
+                print(class_code)
+                print(type(travel_date))
+                
+                return redirect(url_for('search_loggedin', from_=from_location, to=to_location, date=travel_date, class_=class_code))
+            else:
+                return "Invalid credentials"
+        elif request.method == 'GET':
+            print('4')
+            return render_template('login.html')
 
 @app.route('/signup', methods=['GET','POST'])
 def signup_user():

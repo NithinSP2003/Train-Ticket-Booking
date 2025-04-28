@@ -12,7 +12,32 @@
                 <div class="sidebar">
                     <div style="height: 15%;">
                         <img src="../static/images/ChatGPT Image Apr 23, 2025, 02_24_07 PM.png" alt="Logo 1" style="margin-top: -7%; margin-left: 21%; height: 100%;">
-                    </div>        
+                    </div>
+                    {% if session.get('user_logged_in') %} 
+                    <div class="user-container dropdown">
+                        <img src="../static/icons/person.svg" alt="Logo" class="logo-img">
+                        <div class="user-text">
+                          <a href="#" role="button" class="header-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ session.get('user_name')}}
+                          </a>
+                          <ul class="dropdown-menu custom-dropdown" style="transform: translate3d(225px, 0px, 0px) !important; background-color: white; color: black; border: 2px black solid;">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                      </div>
+                      </div>
+                    <div class="logo-container">
+                        <img src="../static/icons/home.svg" alt="Logo 1" class="logo-img">
+                        <span class="logo-text"><a href="{{ url_for('index') }}">Home</a></span>
+                    </div>
+                    <div class="logo-container">
+                        <img src="../static/icons/transit_ticket.svg" alt="Logo 2" class="logo-img">
+                        <span class="logo-text"><a href="{{ url_for('index') }}">PNR Enquiry</a></span>        
+                    </div>
+                    <div class="logo-container">
+                        <img src="../static/icons/cancel-ticket.png" alt="Logo 3" class="logo-img">
+                        <span class="logo-text"><a href="{{ url_for('index') }}">Ticket Cancelation</a></span>        
+                    </div>   
+                    {% else %}    
                     <div class="login-container" style="margin-left: 21%; margin-top: 5%;">
                         <span class="logo-text">
                             <a href="{{ url_for('login_user') }}" class="login-btn" style="text-decoration: none;">Login/Signup</a>
@@ -25,12 +50,13 @@
                     </div>
                     <div class="logo-container">
                         <img src="../static/icons/transit_ticket.svg" alt="Logo 2" class="logo-img">
-                        <span class="logo-text"><a href="{{ url_for('index') }}">PNR Enquiry</a></span>        
+                        <span class="logo-text"><a href="#">PNR Enquiry</a></span>        
                     </div>
                     <div class="logo-container">
                         <img src="../static/icons/cancel-ticket.png" alt="Logo 3" class="logo-img">
-                        <span class="logo-text"><a href="{{ url_for('index') }}">Ticket Cancelation</a></span>        
+                        <span class="logo-text"><a href="#">Ticket Cancelation</a></span>        
                     </div>
+                    {% endif %}
                 </div>
                 <!-- ✅ Hidden login status element -->
                 <div id="login-status" data-logged-in="{{ session.get('user_logged_in', False) }}"></div>
@@ -40,7 +66,6 @@
                 <div class="container" style="width: 90%;">
                     <h3 class="mb-4 text-center" style="margin-top: 4%;">
                         Trains from {{ from_station }} to {{ to_station }} 
-                        [Class: {{ class_labels.get(class_type, class_type) }}]
                     </h3>
 
                     {% if trains %}
@@ -62,7 +87,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <h5 class="text-success mb-0">{{ train.arrival_time }}</h5>
-                                            <small class="text-muted">{{ to_station.title() }} | {{ train.journey_date or 'Today' }}</small>
+                                            <small class="text-muted">{{ to_station.title() }} | {{ train.arrival_date or 'Today' }}</small>
                                         </div>
                                     </div>
 
