@@ -261,12 +261,21 @@ def search_loggedin():
 
         with conn.cursor() as cursor:
             query = """
-                        select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes, ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date
-                        from trains t
-                        join train_schedule ts1 on t.train_number = ts1.train_number 
-                        join train_schedule ts2 on t.train_number = ts2.train_number
-                        join availability a on t.train_number = a.train_number
-                        where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s;
+                    SELECT DISTINCT 
+                        t.train_number, t.train_name, t.route, t.train_type, t.classes,
+                        ts1.departure_time, ts2.arrival_time, t.run_days,
+                        a.travel_date,
+                    CASE 
+                        WHEN ts2.arrival_time < ts1.departure_time THEN DATE_ADD(a.travel_date, INTERVAL 1 DAY)
+                        ELSE a.travel_date
+                    END AS arrival_date
+                    FROM trains t
+                    JOIN train_schedule ts1 ON t.train_number = ts1.train_number 
+                    JOIN train_schedule ts2 ON t.train_number = ts2.train_number
+                    JOIN availability a ON t.train_number = a.train_number
+                    WHERE ts1.station_name = %s 
+                    AND ts2.station_name = %s 
+                    AND a.travel_date = %s;
                     """
             val = (from_station, to_station, travel_date)
             cursor.execute(query, val)
@@ -514,7 +523,16 @@ def confirm_booking():
         return f"Database error: {e}", 500
  
     session['passengers'] = list(passengers.values())
-    return render_template('confirmation.html',train=train, date=session['date'] ,passengers=session['passengers'],class_labels=CLASS_LABELS, class_code=session['class_code'])
+
+    total_fare = 0
+    fare, distance = calculate_fare(session['train_number'], session['from'], session['to'], session['class_code'])
+    session['fare'] = fare
+    for p in session['passengers']:
+        print(p)
+        total_fare += fare
+        print(fare)
+        session['total_fare'] = total_fare
+    return render_template('confirmation.html',fare = session.get('fare'),total_fare=session.get('total_fare'),train=train, date=session['date'] ,passengers=session['passengers'],class_labels=CLASS_LABELS, class_code=session['class_code'])
 
 @app.route('/login', methods=['GET','POST'])
 def login_user():
@@ -528,7 +546,6 @@ def login_user():
             val = (user_name, user_password)
             cursor.execute(sql, val)
             result = cursor.fetchone()
-            session['user_id']= result[0]
             if result:
                 session['user_id']= result[0]
                 session['user_logged_in'] = True
@@ -553,7 +570,6 @@ def login_user():
             val = (user_name, user_password)
             cursor.execute(sql, val)
             result = cursor.fetchone()
-            session['user_id']= result[0]
             if result:
                 session['user_id']= result[0]
                 session['user_logged_in'] = True

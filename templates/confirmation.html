@@ -14,13 +14,17 @@
                 <div style="    height: 15%;">
                 <img src="../static/images/ChatGPT Image Apr 23, 2025, 02_24_07 PM.png" alt="Logo 1" style="margin-top: -7%; margin-left: 21%; height: 100%; filter: invert(1);">
                 </div>        
-                <div class="login-container" style="margin-left: 21%; margin-top: 5%;">
-                    <span class="logo-text">
-                        <a href="{{ url_for('login_user') }}" class="login-btn" style="text-decoration: none;">Login/Signup</a>
-            
-                        <p id="timestamp"></p>
-                    </span>
-                </div>
+                <div class="user-container dropdown">
+                    <img src="../static/icons/person.svg" alt="Logo" class="logo-img" style="filter: invert(0);">
+                    <div class="user-text">
+                      <a href="#" role="button" class="header-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ session.get('user_name')}}
+                      </a>
+                      <ul class="dropdown-menu custom-dropdown" style="transform: translate3d(225px, 0px, 0px) !important; background-color: white; color: black; border: 2px black solid;">
+                        <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                  </div>
+                  </div>
                 <div class="logo-container">
                     <img src="../static/icons/home.svg" alt="Logo 1" class="logo-img">
                     <span class="logo-text">
@@ -50,17 +54,17 @@
                       <div class="row align-items-center text-center mb-2">
                         <div class="col-4">
                           <h5 class="text-primary mb-0">{{ train.departure_time }}</h5>
-                          <small class="text-muted">{{ train.from }} | {{ train.journey_date or 'Today' }}</small>
+                          <small class="text-muted1">{{ train.from }} | {{ train.journey_date or 'Today' }}</small>
 
-                          <small class="text-muted">Departure</small>
+                          <small class="text-muted1">Departure</small>
                         </div>
                         <div class="col-4">
                           <span style="font-size:1rem;">{{ train.duration }}</span>
                         </div>
                         <div class="col-4">
                           <h5 class="text-success mb-0">{{ train.arrival_time }}</h5>
-                          <small class="text-muted">{{ train.to }} | {{ train.journey_date or 'Today' }}</small>
-                          <small class="text-muted">Arrival</small>
+                          <small class="text-muted1">{{ train.to }} | {{ train.journey_date or 'Today' }}</small>
+                          <small class="text-muted1">Arrival</small>
                         </div>
                       </div>
                       <div class="mb-2">
@@ -73,6 +77,30 @@
                     <div class="row">
                         <div class="col-md-12">
                             <form method="POST" action="/summary">
+                                <h2> VALIDATE THE DETAILS</h2>
+                                <table>
+                                        <thead>
+                                        <tr>
+                                            <th>TICKET FARE</th><th>PASSENGER COUNT</th><th>TOTAL FARE</th>
+                                        </tr>
+                                    </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                            {{ fare }}
+                                            </td>
+                                            <td>
+                                            {{ passengers|length }}
+                                            </td>
+                                            <td>
+                                            {{ total_fare }}
+                                            </td>
+                                        
+                                        </tr>
+                                    </tbody>
+                                    <div>
+                                    </div>
+                                </table>
                                 <table>
                                     <thead>
                                         <tr>
@@ -105,6 +133,8 @@
                                         </tr>
                                     {% endfor %}
                                     </tbody>
+                                    <div>
+                                    </div>
                                 </table>
                                 <button type="submit" class="button conf-book">Confirm Booking</button>
                             </form>

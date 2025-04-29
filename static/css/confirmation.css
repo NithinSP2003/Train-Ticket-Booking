@@ -1,6 +1,6 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f4f6f9;
+    background-color: #000000 !important;
     margin: 0;
     padding: 0;
     color: #333;
@@ -11,17 +11,19 @@ body {
     padding: 20px;
     width: calc(100% - 240px);
   }
-  h2 {
+  h2, p , span{
     text-align: center;
-    color: black;
+    color: rgb(255, 255, 255) !important;
     margin-bottom: 10px;
   }
   
   h3 {
     margin-top: 30px;
-    color: #444;
+    color: #fefefe !important;
   }
-  
+  .text-muted1 {
+    color: #fefefe !important;
+  }
   p {
     text-align: center;
     font-size: 18px;
@@ -32,7 +34,12 @@ body {
     width: 100%;
     border-collapse: collapse;
     background-color: #fafafa;
-  }
+    border: 2px blue solid;
+    margin-bottom: 2% !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 1) !important;
+  } 
   
   th, td {
     padding: 12px 15px;
@@ -44,6 +51,7 @@ body {
     background-color: black;
     color: white;
     font-weight: normal;
+    text-align: center !important;
   }
   
   tr:nth-child(even) {
@@ -51,8 +59,8 @@ body {
   }
   
   button{
-    background-color: black;
-    color: white;
+    background-color: rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
     padding: 10px 15px;
       border: none;
       border-radius: 10px;
@@ -61,12 +69,19 @@ body {
       margin-top: 10%;
       height: 45px;
   }
+  button:hover {
+    background-color: #000000;
+    color: #ffffff;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    border: 2px rgb(255, 255, 255) solid !important;
+  }
 
 
 
   .sidebar {
+    filter: invert(1);
     width: 220px;
-    background-color: #111;
+    background-color: #000000;
     color: white;
     height: 100vh;
     position: fixed;
@@ -83,9 +98,9 @@ body {
     width: 100%;
   }
   .logo-container:hover {
-    background-color: #4c4c4c;
+    background-color: #ffffff;
     border-radius: 4px;
-    color: white ;
+    color: rgb(0, 0, 0) ;
     transition: background-color 0.3s ease;
     .logo-img{
       filter: invert(0);
@@ -168,3 +183,41 @@ body {
     color: #000000;
     border: 3px black solid;
   }
+  .user-container {
+    background-color: white;
+    filter: invert(1);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15%;
+    cursor: pointer; 
+    width: 106%;
+    margin-left: -3%;
+    padding: 2%;
+}
+
+.user-text{
+    color: #000000;
+    margin-left: 4px;
+    white-space: nowrap;
+    transition: opacity 0.3s ease;
+    font-weight: bold;
+    a{
+        text-decoration: none;
+        color: #000000;
+    }
+}
+.custom-dropdown {
+    background-color: white;
+    color: black;
+    border: 2px solid black;
+    margin: 0;
+}
+  
+.custom-dropdown .dropdown-item {
+color: black;
+}
+  
+.custom-dropdown .dropdown-item:hover {
+    background-color: #f0f0f0;
+}
