@@ -73,32 +73,29 @@
         </div>
     </div>
 
-    <a href="{{ url_for('download_invoice', pnr_number=ticket_details[0].pnr_number) }}">
-        <button id="downloadBtn">Download Invoice (PDF)</button>
-    </a>
+    <button id="downloadBtn" onclick="downloadPDF()">Download Invoice (PDF)</button>
 {% endif %}
 
-<!-- Include jsPDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Include html2pdf.js via CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
-    document.getElementById("downloadBtn").addEventListener("click", function () {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+    function downloadPDF() {
+      // Capture the specific ticket content
+      const element = document.getElementById('ticketContent'); // Get the #ticketContent element
 
-        // Capture the HTML content
-        const content = document.getElementById('ticketContent').innerHTML;
+      // Configure options for html2pdf
+      const opt = {
+        margin:       0.5,
+        filename:     'ticket.pdf',  // Name of the downloaded PDF file
+        image:        { type: 'jpeg', quality: 1 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
 
-        // Add the HTML content to the PDF
-        doc.html(content, {
-            callback: function (doc) {
-                doc.save('pnr_ticket.pdf'); // Save the file as a PDF
-            },
-            margin: [10, 10, 10, 10], // Add margins
-            x: 10,
-            y: 10
-        });
-    });
+      // Convert the content into a PDF and trigger the download
+      html2pdf().set(opt).from(element).save();
+    }
 </script>
 
 </body>

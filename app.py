@@ -3,7 +3,7 @@ import pymysql, io
 from datetime import datetime, timedelta, date
 import random, string
 from fpdf import FPDF
-
+import pdfkit
 
 conn = pymysql.connect(
     host="mydb.chss26eaa57v.ap-south-1.rds.amazonaws.com",       
@@ -619,6 +619,7 @@ def pnr_enquiry():
     class_code = None
     travel_date = None
     pnr_number = None
+    booking_status = None
 
     if request.method == 'POST':
         pnr_number = request.form['pnr_number']
@@ -637,6 +638,7 @@ def pnr_enquiry():
                 class_code = ticket_details[0][14]
                 travel_date = ticket_details[0][15]
                 pnr_number = ticket_details[0][5]
+                print(ticket_details[0])
             else:
                 flash("No records found for this PNR number.", "danger")
 
@@ -648,60 +650,6 @@ def pnr_enquiry():
                        class_code=class_code,
                        travel_date=travel_date,
                        pnr_number=pnr_number)
-
-
-
-
-@app.route('/download_invoice/<pnr_number>')
-def download_invoice(pnr_number):
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM passengers WHERE pnr_number = %s", (pnr_number,))
-    ticket_details = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
-    if not ticket_details:
-        flash("No records found for this PNR number.", "danger")
-        return redirect(url_for('pnr_enquiry'))
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-
-    pdf.cell(200, 10, txt="INDIAN RAILWAYS - IRCTC e-Ticket", ln=True, align='C')
-    pdf.cell(200, 10, txt="PNR: " + ticket_details[0]['pnr_number'], ln=True)
-    pdf.cell(200, 10, txt="Train No: " + ticket_details[0]['train_number'], ln=True)
-    
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, txt="Passenger Details", ln=True)
-    pdf.set_font("Arial", size=11)
-
-    headers = ["Name", "Age", "Gender", "Seat", "Berth", "Status"]
-    for header in headers:
-        pdf.cell(32, 10, header, border=1)
-    pdf.ln()
-
-    for p in ticket_details:
-        pdf.cell(32, 10, str(p['passenger_name']), border=1)
-        pdf.cell(32, 10, str(p['passenger_age']), border=1)
-        pdf.cell(32, 10, str(p['gender']), border=1)
-        pdf.cell(32, 10, str(p['seat_no']), border=1)
-        pdf.cell(32, 10, str(p['berth_allotted'] or p['berth_preference']), border=1)
-        pdf.cell(32, 10, str(p['booking_status']), border=1)
-        pdf.ln()
-
-    pdf.ln(10)
-    pdf.set_font("Arial", size=10)
-    pdf.multi_cell(0, 10, "* This is a computer-generated ticket and does not require signature.\n* Please carry a valid ID proof during journey.\n* For enquiry, call 139 or visit www.irctc.co.in")
-
-    # Convert PDF to byte stream
-    pdf_bytes = pdf.output(dest='S').encode('latin1')  # Use 'latin1' for binary-safe string
-    pdf_stream = io.BytesIO(pdf_bytes)
-
-    return send_file(pdf_stream, mimetype='application/pdf',
-                     download_name=f"{pnr_number}_ticket.pdf", as_attachment=True)
 
 
 @app.route('/cancel_tickets', methods=['GET', 'POST'])

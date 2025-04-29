@@ -108,7 +108,7 @@
         <form action="{{ url_for('search') }}" method="GET">
           <div class="mb-2">
             <div class="custom-select-wrapper">
-              <select name="from">
+              <select name="from" id="from">
                 <option value="" disabled selected>From Station</option>
                 {% for station in stations %}
                 <option>{{ station }}</option>
@@ -121,7 +121,7 @@
           </div>
           <div class="mb-2" style="margin-bottom: 5% !important;">
             <div class="custom-select-wrapper">
-              <select name="to">
+              <select name="to" id ="to">
                 <option value="" disabled selected>To Station</option>
                 {% for station in stations %}
                 <option>{{ station }}</option>
