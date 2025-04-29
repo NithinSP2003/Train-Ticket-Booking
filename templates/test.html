@@ -88,22 +88,22 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <script>
-    function downloadPDF() {
-      // Capture the entire HTML page content
-      const element = document.getElementById('ticket'); // Or document.documentElement to capture entire content
+        function downloadPDF() {
+        // Capture the entire HTML page content
+        const element = document.getElementById('ticket'); // Or document.documentElement to capture entire content
 
-      // Configure html2pdf options
-      const opt = {
-        margin:       0.5,
-        filename:     'downloaded-page.pdf', // Name of the downloaded PDF file
-        image:        { type: 'jpeg', quality: 1 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
+        // Configure html2pdf options
+        const opt = {
+            margin:       0.5,
+            filename:     'downloaded-page.pdf', // Name of the downloaded PDF file
+            image:        { type: 'jpeg', quality: 1 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
 
-      // Use html2pdf to generate the PDF from the HTML content
-      html2pdf().set(opt).from(element).save();
-    }
+        // Use html2pdf to generate the PDF from the HTML content
+        html2pdf().set(opt).from(element).save();
+        }
   </script>
 
 </body>

@@ -325,6 +325,7 @@ def summary():
     passengers = session.get('passengers', [])
     train_no = session.get('train_number',[])
     class_code = session.get('class_code', [])
+    date = session.get('date')
  
     updated_passengers = []
  
@@ -341,8 +342,8 @@ def summary():
  
     cursor = conn.cursor()
     query = """
-            SELECT berth_type, COUNT(*) FROM seat_berth
-            WHERE train_no = %s AND class_code = %s AND status = 'Available'
+            SELECT berth_type, COUNT(*) FROM seat_berth1
+            WHERE train_no = %s AND class_code = %s AND ticket_status = 'Available'
             GROUP BY berth_type
         """
     cursor.execute(query, (train_no, class_code))
@@ -359,28 +360,32 @@ def summary():
  
         if allotted_berth != 'waiting' and allotted_berth != 'rac':
                 seat_query = """
-                    SELECT seat_number FROM seat_berth
-                    WHERE train_no = %s AND class_code = %s AND berth_type = %s AND status = 'Available'
+                    SELECT seat_number FROM seat_berth1
+                    WHERE train_no = %s AND class_code = %s AND berth_type = %s AND ticket_status = 'Available' AND travel_date = %s
                     LIMIT 1
                 """
-                cursor.execute(seat_query, (train_no, class_code, allotted_berth))
+                cursor.execute(seat_query, (train_no, class_code, allotted_berth,date,))
                 seat_row = cursor.fetchone()
  
                 if seat_row:
                     seat_no = seat_row[0]
                     update_query = """
-                        UPDATE seat_berth
-                        SET status = 'Booked'
-                        WHERE train_no = %s AND class_code = %s AND seat_number = %s
+                        UPDATE seat_berth1
+                        SET ticket_status = 'Booked'
+                        WHERE train_no = %s AND class_code = %s AND seat_number = %s AND travel_date = %s
                     """
-                    cursor.execute(update_query, (train_no, class_code, seat_no))
+                    cursor.execute(update_query, (train_no, class_code, seat_no,date,))
+                    booking_status = "Confirmed"
                 else:
-                    seat_no = "Waiting"
+                    booking_status = "Waiting"
+                    seat_no = None
         else:
-                seat_no = "Waiting"
+                booking_status = "Waiting"
+                seat_no = None
  
         p['berth_allotted'] = allotted_berth
         p['seat_no'] = seat_no
+        p['booking_status'] = booking_status
  
         insert_query = """
                 INSERT INTO passengers (passenger_name, age, gender, berth_preference, nationality, pnr_number, berth_allotted, seat_no,user_id,train_number,from_station, to_station, class, travel_date, booking_status)
@@ -389,7 +394,7 @@ def summary():
         cursor.execute(insert_query, (
                 p['name'], int(p['age']), p['gender'], p['berth'], p['nationality'],
                 pnr, p['berth_allotted'], p['seat_no'], session['user_id'], session['train_number'],
-                session['from'],session['to'],session['class_code'], session['date'],'Confirmed'
+                session['from'],session['to'],session['class_code'], session['date'],p['booking_status']
             ))
  
         updated_passengers.append(p)
@@ -416,7 +421,17 @@ def summary():
         except Exception as e:
                 return f"Database error: {e}", 500
  
- 
+        cursor.execute(
+                """UPDATE availability
+                SET available_count = (
+                                        SELECT COUNT(*) FROM seat_berth1
+                                        WHERE train_no = %s AND class_code = %s 
+                                        AND ticket_status = 'Available' AND travel_date = %s
+                                    )
+                WHERE train_number = %s AND class_code = %s AND travel_date = %s;
+                """,(session['train_number'], session['class_code'], session['date'],
+                     session['train_number'], session['class_code'], session['date'],))
+           
         conn.commit()
  
     return render_template('summary.html', train=train,pnr=pnr,class_labels=CLASS_LABELS, passengers=updated_passengers)
@@ -668,7 +683,7 @@ def cancel_tickets():
                 # Cancel ticket
                 cursor.execute("UPDATE passengers SET booking_status = 'Cancelled' WHERE passenger_id = %s", (pid,))
                 # Free seat
-                cursor.execute("UPDATE seat_berth SET status = 'Available' WHERE seat_number = %s AND train_no = %s", (seat_no, train_number))
+                cursor.execute("UPDATE seat_berth1 SET ticket_status = 'Available' WHERE seat_number = %s AND train_no = %s", (seat_no, train_number))
         conn.commit()
 
         flash("Tickets cancelled successfully.")
