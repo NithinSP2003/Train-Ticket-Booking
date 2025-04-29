@@ -341,8 +341,8 @@ def summary():
  
     cursor = conn.cursor()
     query = """
-            SELECT berth_type, COUNT(*) FROM seat_berths
-            WHERE train_number = %s AND class_code = %s AND status = 'Available'
+            SELECT berth_type, COUNT(*) FROM seat_berth
+            WHERE train_no = %s AND class_code = %s AND status = 'Available'
             GROUP BY berth_type
         """
     cursor.execute(query, (train_no, class_code))
@@ -359,8 +359,8 @@ def summary():
  
         if allotted_berth != 'waiting' and allotted_berth != 'rac':
                 seat_query = """
-                    SELECT seat_number FROM seat_berths
-                    WHERE train_number = %s AND class_code = %s AND berth_type = %s AND status = 'Available'
+                    SELECT seat_number FROM seat_berth
+                    WHERE train_no = %s AND class_code = %s AND berth_type = %s AND status = 'Available'
                     LIMIT 1
                 """
                 cursor.execute(seat_query, (train_no, class_code, allotted_berth))
@@ -369,9 +369,9 @@ def summary():
                 if seat_row:
                     seat_no = seat_row[0]
                     update_query = """
-                        UPDATE seat_berths
+                        UPDATE seat_berth
                         SET status = 'Booked'
-                        WHERE train_number = %s AND class_code = %s AND seat_number = %s
+                        WHERE train_no = %s AND class_code = %s AND seat_number = %s
                     """
                     cursor.execute(update_query, (train_no, class_code, seat_no))
                 else:
@@ -720,7 +720,7 @@ def cancel_tickets():
                 # Cancel ticket
                 cursor.execute("UPDATE passengers SET booking_status = 'Cancelled' WHERE passenger_id = %s", (pid,))
                 # Free seat
-                cursor.execute("UPDATE seat_berths SET status = 'Available' WHERE seat_number = %s AND train_number = %s", (seat_no, train_number))
+                cursor.execute("UPDATE seat_berth SET status = 'Available' WHERE seat_number = %s AND train_no = %s", (seat_no, train_number))
         conn.commit()
 
         flash("Tickets cancelled successfully.")
