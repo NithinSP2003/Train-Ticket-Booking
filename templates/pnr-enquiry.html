@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="../static/css/pnr-enquiry.css">
 </head>
 <body>
-
+{% if not pnr_number %}
 <div class="form-container">
     <h2>PNR Enquiry</h2>
     <form method="POST">
@@ -14,12 +14,13 @@
         <button type="submit">Check Status</button>
     </form>
 </div>
+{% endif %}
 
 {% if ticket_details %}
     <div class="ticket-box" id="ticketContent">
-        <div class="ticket-header">INDIAN RAILWAYS</div>
-        <div class="ticket-header" style="font-size: 16px;">PASSENGER RESERVATION SYSTEM</div>
-        <div class="ticket-header" style="font-size: 14px;">IRCTC e-Ticket</div>
+        <div class="ticket-header">FREETRACKS RAILWAYS</div>
+        <div class="ticket-header" style="font-size: 16px;">TRAIN TICKET RESERVATION SYSTEM</div>
+        <div class="ticket-header" style="font-size: 14px;">Freetracks e-Ticket</div>
 
         <div class="section">
             <table class="info-table">
@@ -64,6 +65,32 @@
                     {% endfor %}
                 </tbody>
             </table>
+            <div>
+
+            </div>
+           
+        </div>
+        <div class="section">
+            <div class="bold">Passenger Details</div>
+            <table class="passenger-table">
+                <thead>
+                    <tr>
+                        <th>FARE PER TICKET</th>
+                        <th>PASSENGER COUNT</th>
+                        <th>TOTAL FARE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Rs.{{  fare }}</td>
+                        <td>1</td>
+                        <td>Rs.{{ total_fare }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div>
+
+            </div>
         </div>
 
         <div class="note">
@@ -87,7 +114,7 @@
       // Configure options for html2pdf
       const opt = {
         margin:       0.5,
-        filename:     'ticket.pdf',  // Name of the downloaded PDF file
+        filename:     '{{ pnr_number }}.pdf',  // Name of the downloaded PDF file
         image:        { type: 'jpeg', quality: 1 },
         html2canvas:  { scale: 2 },
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }

@@ -89,6 +89,14 @@
   <script>
     let passengerCount = 0;
 
+    function handleAgeChange(ageInput, count) {
+      const age = parseInt(ageInput.value, 10);
+      const berthSelect = document.querySelector(`select[name="berth-${count}"]`);
+      if (age > 60 && berthSelect) {
+        berthSelect.value = "Lower";
+      }
+    }
+
     function addPassenger() {
       passengerCount++;
       const div = document.createElement("div");
@@ -103,7 +111,7 @@
           </div>
           <div class="col-md-2">
             <label class="form-label">Age</label>
-            <input type="number" name="age-${passengerCount}" class="form-control" required />
+            <input type="number" name="age-${passengerCount}" class="form-control" required oninput="handleAgeChange(this, ${passengerCount})" />
           </div>
           <div class="col-md-2">
             <label class="form-label">Gender</label>

@@ -161,6 +161,7 @@ def preference(pref, L, pref_type):
         lst = [options.index(pref)] + [i for i in range(len(options)) if i != options.index(pref)]
     else:
         lst = list(range(len(options)))
+    print(lst)
  
     for i in lst:
         if L[i] > 0:
@@ -324,10 +325,13 @@ def logout():
 @app.route('/summary', methods=['POST'])
 def summary():
     pnr = generate_pnr()
+    
     passengers = session.get('passengers', [])
     train_no = session.get('train_number',[])
     class_code = session.get('class_code', [])
     date = session.get('date')
+    total_fare=session.get('total_fare')
+
  
     updated_passengers = []
  
@@ -340,11 +344,14 @@ def summary():
         pref_type = 'sleeper'
  
     seat_counts = {bt: 0 for bt in berth_types}
+    print("seat_count",seat_counts)
     seat_counts['rac'] = 6
+    print("seat_count",seat_counts)
+
  
     cursor = conn.cursor()
     query = """
-            SELECT berth_type, COUNT(*) FROM seat_berth1
+            SELECT berth_type, COUNT(*) FROM seat_berth2
             WHERE train_no = %s AND class_code = %s AND ticket_status = 'Available'
             GROUP BY berth_type
         """
@@ -355,14 +362,14 @@ def summary():
             seat_counts[berth_type] = count
  
     seat_count_list = [seat_counts[bt] for bt in berth_types] + [seat_counts['rac']]
- 
+    print('seat_count_list', seat_count_list)
     for p in passengers:
         pref_code = p['berth']
         allotted_berth = preference(pref_code, seat_count_list, pref_type)
  
         if allotted_berth != 'waiting' and allotted_berth != 'rac':
                 seat_query = """
-                    SELECT seat_number FROM seat_berth1
+                    SELECT seat_number FROM seat_berth2
                     WHERE train_no = %s AND class_code = %s AND berth_type = %s AND ticket_status = 'Available' AND travel_date = %s
                     LIMIT 1
                 """
@@ -372,7 +379,7 @@ def summary():
                 if seat_row:
                     seat_no = seat_row[0]
                     update_query = """
-                        UPDATE seat_berth1
+                        UPDATE seat_berth2
                         SET ticket_status = 'Booked'
                         WHERE train_no = %s AND class_code = %s AND seat_number = %s AND travel_date = %s
                     """
@@ -390,7 +397,7 @@ def summary():
         p['booking_status'] = booking_status
  
         insert_query = """
-                INSERT INTO passengers (passenger_name, age, gender, berth_preference, nationality, pnr_number, berth_allotted, seat_no,user_id,train_number,from_station, to_station, class, travel_date, booking_status)
+                INSERT INTO passenger (passenger_name, age, gender, berth_preference, nationality, pnr_number, berth_allotted, seat_no,user_id,train_number,from_station, to_station, class, travel_date, booking_status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
         cursor.execute(insert_query, (
@@ -402,7 +409,15 @@ def summary():
         updated_passengers.append(p)
 
         try:
-                    cursor.execute("SELECT * FROM trains WHERE train_number = %s", (session['train_number'],))
+                    cursor.execute("""
+                                   select distinct t.train_number, t.train_name,t.route, t.train_type, t.classes,
+                            ts1.departure_time, ts2.arrival_time, t.run_days, a.travel_date,ts1.station_name,ts2.station_name
+                            from trains t
+                            join train_schedule ts1 on t.train_number = ts1.train_number 
+                            join train_schedule ts2 on t.train_number = ts2 .train_number
+                            join availability a on t.train_number = a.train_number
+                            where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s and t.train_number = %s
+                        """, (session['from'], session['to'], session['date'], session['train_number'],))
                     row = cursor.fetchone()
 
                     if not row:
@@ -418,7 +433,11 @@ def summary():
                         'arrival_time': row[6],
                         'run_days': row[7],
                         'duration': calculate_duration(row[5], row[6]),
+                        'journey_date' :row[8],
+                        'from' : row[9],
+                        'to' : row[10]
                     }
+                    print(train)
 
         except Exception as e:
                 return f"Database error: {e}", 500
@@ -426,7 +445,7 @@ def summary():
         cursor.execute(
                 """UPDATE availability
                 SET available_count = (
-                                        SELECT COUNT(*) FROM seat_berth1
+                                        SELECT COUNT(*) FROM seat_berth2
                                         WHERE train_no = %s AND class_code = %s 
                                         AND ticket_status = 'Available' AND travel_date = %s
                                     )
@@ -435,8 +454,19 @@ def summary():
                      session['train_number'], session['class_code'], session['date'],))
            
         conn.commit()
+    
  
-    return render_template('summary.html', train=train,pnr=pnr,class_labels=CLASS_LABELS, passengers=updated_passengers)
+    
+    return render_template('summary.html', train=train,pnr=pnr,class_labels=CLASS_LABELS, passengers=updated_passengers, date = session.get('date'), total_fare = session.get('total_fare'),class_code=session['class_code'])
+
+
+
+
+
+
+
+
+
 
 @app.route('/book')
 def book():
@@ -687,7 +717,7 @@ def get_route(train_number):
                 })
         except GeocoderTimedOut:
             continue
-        
+
         time.sleep(1)
     return jsonify(station_coords)
   
@@ -703,7 +733,8 @@ def pnr_enquiry():
     travel_date = None
     pnr_number = None
     booking_status = None
-
+    total_fare=session.get('total_fare')
+    fare = session.get('fare')
     if request.method == 'POST':
         pnr_number = request.form['pnr_number']
 
@@ -711,7 +742,7 @@ def pnr_enquiry():
             cursor = conn.cursor()
 
             # Fetch the details of passengers for the given PNR number
-            cursor.execute("SELECT * FROM passengers WHERE pnr_number = %s", (pnr_number,))
+            cursor.execute("SELECT * FROM passenger WHERE pnr_number = %s", (pnr_number,))
             ticket_details = cursor.fetchall()
 
             if ticket_details:
@@ -724,6 +755,17 @@ def pnr_enquiry():
                 print(ticket_details[0])
             else:
                 flash("No records found for this PNR number.", "danger")
+        
+        return render_template('pnr-enquiry.html',
+                    ticket_details=ticket_details,
+                    train_numb=train_numb,
+                    from_station=from_station,
+                    to_station=to_station,
+                    class_code=class_code,
+                    travel_date=travel_date,
+                    pnr_number=pnr_number,
+                    total_fare=session.get('total_fare'),
+                    fare = session.get('fare'),)
 
     return render_template('pnr-enquiry.html',
                        ticket_details=ticket_details,
@@ -732,8 +774,9 @@ def pnr_enquiry():
                        to_station=to_station,
                        class_code=class_code,
                        travel_date=travel_date,
-                       pnr_number=pnr_number)
-
+                       pnr_number=pnr_number,
+                       total_fare=session.get('total_fare'),
+                       fare = session.get('fare'),)
 
 @app.route('/cancel_tickets', methods=['GET', 'POST'])
 def cancel_tickets():
@@ -743,28 +786,28 @@ def cancel_tickets():
     if request.method == 'POST':
         selected_ids = request.form.getlist('passenger_ids')
         for pid in selected_ids:
-            cursor.execute("SELECT seat_no, train_number FROM passengers WHERE passenger_id = %s", (pid,))
+            cursor.execute("SELECT seat_no, train_number FROM passenger WHERE passenger_id = %s", (pid,))
             result = cursor.fetchone()
             if result:
                 seat_no = result[0]
                 train_number = result[1]
                 # Cancel ticket
-                cursor.execute("UPDATE passengers SET booking_status = 'Cancelled' WHERE passenger_id = %s", (pid,))
+                cursor.execute("UPDATE passenger SET booking_status = 'Cancelled' WHERE passenger_id = %s", (pid,))
                 # Free seat
-                cursor.execute("UPDATE seat_berth1 SET ticket_status = 'Available' WHERE seat_number = %s AND train_no = %s", (seat_no, train_number))
+                cursor.execute("UPDATE seat_berth2 SET ticket_status = 'Available' WHERE seat_number = %s AND train_no = %s", (seat_no, train_number))
         conn.commit()
 
         flash("Tickets cancelled successfully.")
         return redirect(url_for('cancel_tickets'))
 
     # Fetch PNRs for this user
-    cursor.execute("SELECT DISTINCT pnr_number FROM passengers WHERE user_id = %s", (user_id,))
+    cursor.execute("SELECT DISTINCT pnr_number FROM passenger WHERE user_id = %s", (user_id,))
     pnrs = cursor.fetchall()
     passengers_by_pnr = {}
 
     for row in pnrs:
         pnr = row[0]
-        cursor.execute("SELECT * FROM passengers WHERE pnr_number = %s AND user_id = %s", (pnr, user_id))
+        cursor.execute("SELECT * FROM passenger WHERE pnr_number = %s AND user_id = %s", (pnr, user_id))
         passengers = cursor.fetchall()
         passengers_by_pnr[pnr] = passengers
         print(passengers_by_pnr)
