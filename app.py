@@ -1,6 +1,8 @@
 from flask import Flask, request, render_template, redirect, url_for,flash,session, jsonify, send_file
-import pymysql, io
+import pymysql, io, time
 from datetime import datetime, timedelta, date
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
 import random, string
 from fpdf import FPDF
 import pdfkit
@@ -623,6 +625,72 @@ def signup_user():
         return render_template('signup.html')
 
 
+@app.route('/get_route/<train_number>')
+def get_route(train_number):
+    station_coords = {
+        'New Delhi': {'lat': 28.6139, 'lon': 77.2090, 'name': 'New Delhi'},
+        'Agra': {'lat': 27.1767, 'lon': 78.0081, 'name': 'Agra'},
+        'Gwalior': {'lat': 26.2183, 'lon': 78.1828, 'name': 'Gwalior'},
+        'Jhansi': {'lat': 25.4484, 'lon': 78.5685, 'name': 'Jhansi'},
+        'Bhopal': {'lat': 23.2599, 'lon': 77.4126, 'name': 'Bhopal'},
+        'Firozpur': {'lat': 30.9255, 'lon': 74.6131, 'name': 'Firozpur'},
+        'Ludhiana': {'lat': 30.9010, 'lon': 75.8573, 'name': 'Ludhiana'},
+        'Nagpur': {'lat': 21.1458, 'lon': 79.0882, 'name': 'Nagpur'},
+        'Mumbai': {'lat': 19.0760, 'lon': 72.8777, 'name': 'Mumbai'},
+        'Howrah': {'lat': 22.5958, 'lon': 88.2636, 'name': 'Howrah'},
+        'Asansol': {'lat': 23.6833, 'lon': 86.9667, 'name': 'Asansol'},
+        'Gaya': {'lat': 24.7969, 'lon': 85.0000, 'name': 'Gaya'},
+        'Mughalsarai': {'lat': 25.2818, 'lon': 83.1197, 'name': 'Mughalsarai'},
+        'Ambala': {'lat': 30.3782, 'lon': 76.7767, 'name': 'Ambala'},
+        'Amritsar': {'lat': 31.6340, 'lon': 74.8723, 'name': 'Amritsar'},
+        'Chennai': {'lat': 13.0827, 'lon': 80.2707, 'name': 'Chennai'},
+        'Salem': {'lat': 11.6643, 'lon': 78.1460, 'name': 'Salem'},
+        'Karur': {'lat': 10.9576, 'lon': 78.0810, 'name': 'Karur'},
+        'Madurai': {'lat': 9.9252, 'lon': 78.1198, 'name': 'Madurai'},
+        'Tirunelveli': {'lat': 8.7139, 'lon': 77.7567, 'name': 'Tirunelveli'},
+        'Kanyakumari': {'lat': 8.0883, 'lon': 77.5385, 'name': 'Kanyakumari'},
+        'Trichy': {'lat': 10.7905, 'lon': 78.7047, 'name': 'Trichy'},
+        'Dindigul': {'lat': 10.3673, 'lon': 77.9803, 'name': 'Dindigul'},
+        'Villupuram': {'lat': 11.9393, 'lon': 79.4930, 'name': 'Villupuram'},
+        'Erode': {'lat': 11.3410, 'lon': 77.7172, 'name': 'Erode'},
+        'Bangalore': {'lat': 12.9716, 'lon': 77.5946, 'name': 'Bangalore'},
+        'Surat': {'lat': 21.1702, 'lon': 72.8311, 'name': 'Surat'},
+        'Vadodara': {'lat': 22.3072, 'lon': 73.1812, 'name': 'Vadodara'},
+        'Kota': {'lat': 25.2138, 'lon': 75.8648, 'name': 'Kota'},
+        'Manamadurai': {'lat': 9.6928, 'lon': 78.4810, 'name': 'Manamadurai'},
+        'Rameswaram': {'lat': 9.2886, 'lon': 79.3174, 'name': 'Rameswaram'},
+        # Add others as needed
+    }
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT route FROM trains WHERE train_number = %s", (train_number,))
+    result = cursor.fetchone()
+    print(result)
+
+    if not result:
+        return jsonify({"error": "Train not found"}), 404
+    
+    route_str = result[0]
+    stations = [s.strip() for s in route_str.split(",")]
+
+    geolocator = Nominatim(user_agent="train_route_mapper_web")
+    station_coords = []
+
+    for station in stations:
+        try:
+            location = geolocator.geocode(station + ", India", timeout=5)
+            if location:
+                station_coords.append({
+                    "name": station,
+                    "lat": location.latitude,
+                    "lon": location.longitude
+                })
+        except GeocoderTimedOut:
+            continue
+        
+        time.sleep(1)
+    return jsonify(station_coords)
+  
 
 
 @app.route('/pnr_enquiry', methods=['GET', 'POST'])
