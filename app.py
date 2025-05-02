@@ -193,30 +193,33 @@ def search():
     session['to'] = to_station
     session['date'] = travel_date
     session['class_code'] = class_type
-        
+ 
     matching_trains = []
-
+ 
     with conn.cursor() as cursor:
         query = """
-                    SELECT DISTINCT 
-                        t.train_number, t.train_name, t.route, t.train_type, t.classes,
-                        ts1.departure_time, ts2.arrival_time, t.run_days,
-                        a.travel_date,
-                    CASE 
-                        WHEN ts2.arrival_time < ts1.departure_time THEN DATE_ADD(a.travel_date, INTERVAL 1 DAY)
-                        ELSE a.travel_date
-                    END AS arrival_date
-                    FROM trains t
-                    JOIN train_schedule ts1 ON t.train_number = ts1.train_number 
-                    JOIN train_schedule ts2 ON t.train_number = ts2.train_number
-                    JOIN availability a ON t.train_number = a.train_number
-                    WHERE ts1.station_name = %s 
-                    AND ts2.station_name = %s 
-                    AND a.travel_date = %s;
-                """
+            SELECT DISTINCT
+                t.train_number, t.train_name, t.route, t.train_type, t.classes,
+                ts1.departure_time, ts2.arrival_time, t.run_days,
+                a.travel_date,
+                CASE
+                    WHEN ts2.arrival_time < ts1.departure_time THEN DATE_ADD(a.travel_date, INTERVAL 1 DAY)
+                    ELSE a.travel_date
+                END AS arrival_date
+            FROM trains t
+            JOIN train_schedule ts1 ON t.train_number = ts1.train_number
+            JOIN train_schedule ts2 ON t.train_number = ts2.train_number
+            JOIN availability a ON t.train_number = a.train_number
+            WHERE ts1.station_name = %s
+            AND ts2.station_name = %s
+            AND a.travel_date = %s
+        """
         val = (from_station, to_station, travel_date)
         cursor.execute(query, val)
         trains = cursor.fetchall()
+ 
+        current_time = datetime.now()
+ 
         for train1 in trains:
             train = {
                 'number': train1[0],
@@ -230,27 +233,37 @@ def search():
                 'travel_date': train1[8],
                 'arrival_date': train1[9]
             }
+ 
             route = [station.strip().lower() for station in train['route'].split(',')]
             if from_station.lower() in route and to_station.lower() in route:
                 if route.index(from_station.lower()) < route.index(to_station.lower()):
                     if class_type and class_type not in train['classes'].split(','):
                         continue
-
-                    # Skip trains with missing times
+ 
                     if not train['departure_time'] or not train['arrival_time']:
                         continue
-
+ 
+                    if isinstance(train['departure_time'], timedelta):
+                        dep_time = (datetime.min + train['departure_time']).time()
+                    else:
+                        dep_time = train['departure_time']
+ 
+                    departure_datetime = datetime.combine(train['travel_date'], dep_time)
+ 
+                    if departure_datetime <= current_time + timedelta(hours=1):
+                        continue
+ 
                     train['duration'] = calculate_duration(train['departure_time'], train['arrival_time'])
                     train['journey_date'] = train['travel_date']
                     matching_trains.append(train)
-
+ 
     return render_template('train-list.html',
-                        trains=matching_trains,
-                        from_station=from_station,
-                        to_station=to_station,
-                        class_type=class_type,
-                        class_labels=CLASS_LABELS,
-                        station_name=station_name)
+                           trains=matching_trains,
+                           from_station=from_station,
+                           to_station=to_station,
+                           class_type=class_type,
+                           class_labels=CLASS_LABELS,
+                           station_name=station_name)
 
 @app.route('/ticket-list1', methods=['GET'])
 def search_loggedin():
@@ -459,21 +472,20 @@ def summary():
     
     return render_template('summary.html', train=train,pnr=pnr,class_labels=CLASS_LABELS, passengers=updated_passengers, date = session.get('date'), total_fare = session.get('total_fare'),class_code=session['class_code'])
 
-
-
-
-
-
-
-
-
-
 @app.route('/book')
 def book():
+    
+    today = date.today()
     train_number = request.args.get('train')
     session['class_code'] = request.args.get('class')
     status = request.args.get('status')
 
+
+
+    today = date.today()
+
+    
+   
     if not train_number:
         return "Train number missing", 400
 
@@ -487,8 +499,11 @@ def book():
                             join train_schedule ts2 on t.train_number = ts2 .train_number
                             join availability a on t.train_number = a.train_number
                             where ts1.station_name = %s and ts2.station_name = %s and a.travel_date = %s and t.train_number = %s
+
+
                         """, (session['from'], session['to'], session['date'], train_number,))
             row = cursor.fetchone()
+
 
             if not row:
                 return "Train not found", 404
@@ -510,6 +525,15 @@ def book():
             }
 
             session['train_number'] = train['number']
+
+            print("Session Date:", session['date'])
+            print("Today:", date.today())
+
+           
+
+
+
+
 
 
     except Exception as e:
@@ -720,8 +744,6 @@ def get_route(train_number):
 
         time.sleep(1)
     return jsonify(station_coords)
-  
-
 
 @app.route('/pnr_enquiry', methods=['GET', 'POST'])
 def pnr_enquiry():
@@ -765,7 +787,8 @@ def pnr_enquiry():
                     travel_date=travel_date,
                     pnr_number=pnr_number,
                     total_fare=session.get('total_fare'),
-                    fare = session.get('fare'),)
+                    fare = session.get('fare'),
+                    passengers = session['passengers'])
 
     return render_template('pnr-enquiry.html',
                        ticket_details=ticket_details,
@@ -776,7 +799,13 @@ def pnr_enquiry():
                        travel_date=travel_date,
                        pnr_number=pnr_number,
                        total_fare=session.get('total_fare'),
-                       fare = session.get('fare'),)
+                       fare = session.get('fare'),
+                       passengers = session['passengers'])
+
+from flask import render_template, request, redirect, url_for, flash, session
+from datetime import datetime, date
+
+from datetime import datetime
 
 @app.route('/cancel_tickets', methods=['GET', 'POST'])
 def cancel_tickets():
@@ -813,9 +842,6 @@ def cancel_tickets():
         print(passengers_by_pnr)
 
     return render_template('cancel-ticket.html', passengers_by_pnr=passengers_by_pnr)
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -150,7 +150,7 @@
                                                 {% endfor %}
                                             </div>
                                             <div class="col-md-2" style="width: 100% !important; margin-left: 100%; margin-top: -4%;">
-                                                <button class="btn btn-primary track-btn" data-train="{{ train.number }}">Track Train</button>
+                                                <button class="btn btn-primary track-btn" data-train="{{ train.number }}">Check Route</button>
                                             </div>
                                         </div>
                                     </div>
@@ -160,7 +160,7 @@
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="alert alert-warning text-center">🚫 No trains found for the selected route and class.</div>
+                        <div class="alert alert-warning text-center">🚫 No trains found for the selected route, class and travel date.</div>
                     {% endif %}
                 </div>
             </div>

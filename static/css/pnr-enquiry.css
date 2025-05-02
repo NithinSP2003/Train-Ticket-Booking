@@ -89,3 +89,16 @@ body {
 #downloadBtn:hover {
     background-color: #27ae60;
 }
+
+
+button{
+    background-color: rgb(4, 0, 0);
+    color: rgb(251, 249, 249);
+    padding: 10px 15px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-left: 10px;
+      margin-top: 1%;
+      height: 45px;
+  }

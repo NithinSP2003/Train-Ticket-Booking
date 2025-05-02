@@ -42,6 +42,10 @@
         {% endfor %}
         <button type="submit" class="btn btn-danger mt-3">Cancel Selected Tickets</button>
     </form>
+
+    <form action="{{ url_for('index') }}" method="get">
+        <button type="submit" class="button">Go to Home</button>
+    </form>
 </div>
 
 </body>

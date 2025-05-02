@@ -33,12 +33,12 @@
                 <div class="logo-container">
                     <img src="../static/icons/transit_ticket.svg" alt="Logo 2" class="logo-img">
                     <span class="logo-text">
-                        <a href="{{ url_for('index') }}">PNR Enquiry</a></span>        
+                        <a href="{{ url_for('pnr_enquiry') }}">PNR Enquiry</a></span>        
                 </div>
                 <div class="logo-container">
                     <img src="../static/icons/cancel-ticket.png" alt="Logo 3" class="logo-img">
                     <span class="logo-text">
-                        <a href="{{ url_for('index') }}">Ticket Cancelation</a></span>        
+                        <a href="{{ url_for('cancel_tickets') }}">Ticket Cancelation</a></span>        
                 </div>
                 </div>
             </div>
@@ -92,10 +92,17 @@
                         {% endfor %}
                     </tbody>
                     </table>
+
+                    <br><br>
+                    
                     <form action="{{ url_for('pnr_enquiry') }}" method="post">
                       <input type="hidden" name="pnr_number" value="{{ pnr }}">
                       <button type="submit">Download Ticket</button>
                   </form>
+                  <br><br>
+                  <form action="{{ url_for('index') }}" method="get">
+                    <button type="submit" class="button">Go to Home</button>
+                </form>
                 
                   </div>
             </div>

@@ -83,7 +83,7 @@
                 <tbody>
                     <tr>
                         <td>Rs.{{  fare }}</td>
-                        <td>1</td>
+                        <td>{{ passengers|length }}</td>
                         <td>Rs.{{ total_fare }}</td>
                     </tr>
                 </tbody>
@@ -102,6 +102,11 @@
 
     <button id="downloadBtn" onclick="downloadPDF()">Download Invoice (PDF)</button>
 {% endif %}
+
+
+<form action="{{ url_for('index') }}" method="get">
+    <button type="submit" class="button">Go to Home</button>
+</form>
 
 <!-- Include html2pdf.js via CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
